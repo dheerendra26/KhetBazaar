@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Package, User, MapPin, Phone, Mail, Calendar, IndianRupee } from "lucide-react";
+import {
+  Package,
+  User,
+  MapPin,
+  Phone,
+  Mail,
+  Calendar,
+  IndianRupee,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../utils/axiosInstance";
 
 function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -29,7 +38,7 @@ function UserProfile() {
         }
 
         // Use the correct API URL
-        const apiUrl = `https://farmers-mart.onrender.com/store/user`;
+        const apiUrl = `${axiosInstance}/store/user`;
 
         // Make POST request with JSON body
         const response = await fetch(apiUrl, {
@@ -42,7 +51,10 @@ function UserProfile() {
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || `API request failed with status ${response.status}`);
+          throw new Error(
+            errorData.message ||
+              `API request failed with status ${response.status}`
+          );
         }
 
         const data = await response.json();
@@ -74,7 +86,9 @@ function UserProfile() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center p-6 max-w-md">
           <div className="text-red-500 text-5xl mb-4">!</div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Error Loading Profile</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">
+            Error Loading Profile
+          </h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
@@ -136,10 +150,15 @@ function UserProfile() {
           <div className="space-y-4">
             {userData.orders && userData.orders.length > 0 ? (
               userData.orders.map((order) => (
-                <div key={order._id.toString()} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                <div
+                  key={order._id.toString()}
+                  className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                >
                   <div className="flex justify-between items-start flex-wrap gap-4">
                     <div>
-                      <h3 className="text-xl font-semibold text-gray-800 mb-2">{order.productName}</h3>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                        {order.productName}
+                      </h3>
                       <div className="space-y-2 text-gray-600">
                         <p className="flex items-center gap-2">
                           <IndianRupee className="w-4 h-4 text-orange-500" />
@@ -156,13 +175,17 @@ function UserProfile() {
                       </div>
                     </div>
                     <div className="bg-green-50 px-4 py-2 rounded-lg">
-                      <p className="text-green-800 font-semibold">Total: ₹{order.totalPrice}</p>
+                      <p className="text-green-800 font-semibold">
+                        Total: ₹{order.totalPrice}
+                      </p>
                     </div>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-gray-500">No orders found</div>
+              <div className="text-center py-8 text-gray-500">
+                No orders found
+              </div>
             )}
           </div>
         </div>

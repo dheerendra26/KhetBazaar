@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
 
 const Shop = () => {
   const [products, setProducts] = useState([]);
@@ -32,7 +33,7 @@ const Shop = () => {
     };
 
     axios
-      .get("https://farmers-mart.onrender.com/store/products", config)
+      .get(`${axiosInstance}/store/products`, config)
       .then((response) => {
         setProducts(response.data);
         setFilteredProducts(response.data);
@@ -100,8 +101,8 @@ const Shop = () => {
       {error && <p className="text-red-500">{error}</p>}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {filteredProducts.map((product) => (
-          <Link 
-            to={`/product/${product._id}`} 
+          <Link
+            to={`/product/${product._id}`}
             key={product._id}
             className="border p-4 rounded-lg shadow-md bg-white flex flex-col justify-between hover:shadow-lg transition duration-300"
           >
@@ -114,8 +115,12 @@ const Shop = () => {
             </div>
             <div>
               <h2 className="text-lg font-semibold">{product.name}</h2>
-              <p className="text-gray-600 mb-2 line-clamp-2">{product.description}</p>
-              <p className="text-sm text-gray-500">Location: {product.location}</p>
+              <p className="text-gray-600 mb-2 line-clamp-2">
+                {product.description}
+              </p>
+              <p className="text-sm text-gray-500">
+                Location: {product.location}
+              </p>
               <p className="text-green-500 font-bold mt-2">₹{product.price}</p>
             </div>
             <div className="mt-4 text-blue-600 text-sm font-medium">

@@ -1,7 +1,7 @@
-
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../utils/axiosInstance";
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -16,13 +16,14 @@ const Register = () => {
     setMessage(null);
 
     try {
-      const response = await axios.post("https://farmers-mart.onrender.com/register", {
+      const response = await axios.post(`${axiosInstance}/register`, {
         email,
       });
 
       setMessage({
         type: "success",
-        text: response.data.message || "OTP sent successfully. Check your email.",
+        text:
+          response.data.message || "OTP sent successfully. Check your email.",
       });
 
       // Redirect to login page
@@ -30,7 +31,8 @@ const Register = () => {
     } catch (error) {
       setMessage({
         type: "error",
-        text: error.response?.data?.message || "Registration failed. Try again.",
+        text:
+          error.response?.data?.message || "Registration failed. Try again.",
       });
     } finally {
       setLoading(false);
@@ -91,7 +93,6 @@ const Register = () => {
 
 export default Register;
 
-
 // import { useState } from "react";
 // import axios from "axios";
 // import { useNavigate } from "react-router-dom";
@@ -121,7 +122,7 @@ export default Register;
 
 //     try {
 //       const response = await axios.post(
-//         "https://farmers-mart.onrender.com/register",
+//         `${axiosInstance}/register`,
 //         formData
 //       );
 

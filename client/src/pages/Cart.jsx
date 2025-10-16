@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import { ShoppingCart } from "lucide-react";
+import axiosInstance from "../utils/axiosInstance";
 
 const Cart = () => {
   const [cart, setCart] = useState([]);
@@ -16,24 +17,23 @@ const Cart = () => {
       return;
     }
 
-
     const cartData = JSON.parse(localStorage.getItem("cart") || "[]");
     setCart(cartData);
   }, [isAuthenticated, navigate]);
 
   const updateCartItemQuantity = (productId, newQuantity) => {
     if (newQuantity < 1) return;
-    
-    const updatedCart = cart.map(item =>
+
+    const updatedCart = cart.map((item) =>
       item._id === productId ? { ...item, quantity: newQuantity } : item
     );
-    
+
     setCart(updatedCart);
     localStorage.setItem("cart", JSON.stringify(updatedCart));
   };
 
   const removeFromCart = (productId) => {
-    const updatedCart = cart.filter(item => item._id !== productId);
+    const updatedCart = cart.filter((item) => item._id !== productId);
     setCart(updatedCart);
     localStorage.setItem("cart", JSON.stringify(updatedCart));
   };
@@ -44,54 +44,65 @@ const Cart = () => {
   };
 
   const handleBuy = async () => {
-    const buyerEmail = localStorage.getItem('userEmail');
+    const buyerEmail = localStorage.getItem("userEmail");
 
     if (!buyerEmail) {
-      setError('User email not found. Please try logging in again.');
+      setError("User email not found. Please try logging in again.");
       return;
     }
 
     // Check if we have all the required data
-    const invalidItems = cart.filter(item => !item.sellerEmail);
+    const invalidItems = cart.filter((item) => !item.sellerEmail);
     if (invalidItems.length > 0) {
-      setError('Some products are missing seller information. Please try refreshing or contact support.');
-      console.error('Items missing seller email:', invalidItems);
+      setError(
+        "Some products are missing seller information. Please try refreshing or contact support."
+      );
+      console.error("Items missing seller email:", invalidItems);
       return;
     }
 
     try {
       const orderData = {
         buyerEmail,
-        items: cart.map(item => ({
+        items: cart.map((item) => ({
           productName: item.name,
           productPrice: item.price,
           quantity: item.quantity,
           totalPrice: item.price * item.quantity,
-          sellerEmail: item.sellerEmail 
-        }))
+          sellerEmail: item.sellerEmail,
+        })),
       };
 
-      console.log('Sending order data:', orderData);
+      console.log("Sending order data:", orderData);
 
+      const response = await axios.post(
+        `${axiosInstance}/orders`,
+        orderData
+      );
+      console.log("Order response:", response.data);
 
-      const response = await axios.post('https://farmers-mart.onrender.com/orders', orderData);
-      console.log('Order response:', response.data);
-      
       clearCart();
-      navigate('/checkout', { state: { orderData } });
+      navigate("/checkout", { state: { orderData } });
     } catch (error) {
-      console.error('Error processing order:', error);
+      console.error("Error processing order:", error);
       if (error.response) {
-        console.error('Server error details:', error.response.data);
-        setError(`Failed to process order: ${error.response.data.message || 'Unknown error'}`);
+        console.error("Server error details:", error.response.data);
+        setError(
+          `Failed to process order: ${
+            error.response.data.message || "Unknown error"
+          }`
+        );
       } else {
-        setError('Failed to process order. Please try again.');
+        setError("Failed to process order. Please try again.");
       }
     }
   };
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const totalPrice = cart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -108,7 +119,9 @@ const Cart = () => {
       {cart.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <ShoppingCart className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-          <h2 className="text-xl font-medium text-gray-600 mb-4">Your cart is empty</h2>
+          <h2 className="text-xl font-medium text-gray-600 mb-4">
+            Your cart is empty
+          </h2>
           <Link
             to="/shop"
             className="inline-block bg-green-600 text-white py-2 px-6 rounded-lg hover:bg-green-700"
@@ -130,28 +143,37 @@ const Cart = () => {
                   />
                 </div>
                 <div className="ml-4 flex-grow">
-                  <Link to={`/product/${item._id}`} className="font-medium hover:text-green-600">
+                  <Link
+                    to={`/product/${item._id}`}
+                    className="font-medium hover:text-green-600"
+                  >
                     {item.name}
                   </Link>
                   <p className="text-green-600">₹{item.price}</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => updateCartItemQuantity(item._id, item.quantity - 1)}
+                    onClick={() =>
+                      updateCartItemQuantity(item._id, item.quantity - 1)
+                    }
                     className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full"
                   >
                     -
                   </button>
                   <span className="mx-2">{item.quantity}</span>
                   <button
-                    onClick={() => updateCartItemQuantity(item._id, item.quantity + 1)}
+                    onClick={() =>
+                      updateCartItemQuantity(item._id, item.quantity + 1)
+                    }
                     className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full"
                   >
                     +
                   </button>
                 </div>
                 <div className="ml-6 text-right">
-                  <p className="font-medium">₹{(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="font-medium">
+                    ₹{(item.price * item.quantity).toFixed(2)}
+                  </p>
                   <button
                     onClick={() => removeFromCart(item._id)}
                     className="text-red-500 text-sm hover:underline"

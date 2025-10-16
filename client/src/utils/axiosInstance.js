@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "https://farmers-mart.onrender.com",
+  baseURL: "http://localhost:4000",
+  baseURL: "https://farmersconnect.onrender.com",
   withCredentials: true,
 });
 
