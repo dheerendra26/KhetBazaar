@@ -15,10 +15,7 @@ const ProductRouter = require("./routes/postProductRoute");
 const PORT = process.env.PORT || 3000;
 const corsOptions = {
     origin: [
-        'http://localhost:5173', 
-        'http://localhost:3000', 
-        'https://farmers-mart-one.vercel.app',
-        'https://farmers-mart-16zdqb8z5-coffees-projects-132cf7e6.vercel.app'
+        'https://farmersconnnect.netlify.app'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
