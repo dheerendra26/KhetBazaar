@@ -9,7 +9,7 @@ mongoose
     console.log("established connection with mongoDB instance");
   })
   .catch((err) => {
-    console.løg(err);
+    console.log(err);
   });
 
 module.exports = mongoose.connection;
