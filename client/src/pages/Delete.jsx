@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import axiosInstance from "../utils/axiosInstance";
 
 const DeleteProduct = () => {
   const [productId, setProductId] = useState("");
@@ -32,7 +31,7 @@ const DeleteProduct = () => {
       };
 
       await axios.delete(
-        `${axiosInstance}/products/delete/${productId}`,
+        `https://farmersconnect.onrender.com/products/delete/${productId}`,
         config
       );
 

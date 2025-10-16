@@ -9,7 +9,6 @@ import {
   IndianRupee,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import axiosInstance from "../utils/axiosInstance";
 
 function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -38,7 +37,7 @@ function UserProfile() {
         }
 
         // Use the correct API URL
-        const apiUrl = `${axiosInstance}/store/user`;
+        const apiUrl = `https://farmersconnect.onrender.com/store/user`;
 
         // Make POST request with JSON body
         const response = await fetch(apiUrl, {

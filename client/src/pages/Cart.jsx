@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import { ShoppingCart } from "lucide-react";
-import axiosInstance from "../utils/axiosInstance";
 
 const Cart = () => {
   const [cart, setCart] = useState([]);
@@ -76,7 +75,7 @@ const Cart = () => {
       console.log("Sending order data:", orderData);
 
       const response = await axios.post(
-        `${axiosInstance}/orders`,
+        "https://farmersconnect.onrender.com/orders",
         orderData
       );
       console.log("Order response:", response.data);

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import axios from "axios";
-import axiosInstance from "../utils/axiosInstance";
 
 const Upload = () => {
   const [formData, setFormData] = useState({
@@ -25,7 +24,7 @@ const Upload = () => {
 
     try {
       const response = await axios.post(
-        `${axiosInstance}/products/post`,
+        "https://farmersconnect.onrender.com/products/post",
         formData
       );
 

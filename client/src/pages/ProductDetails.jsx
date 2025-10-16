@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
-import axiosInstance from "../utils/axiosInstance";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -25,7 +24,7 @@ const ProductDetail = () => {
     const fetchProductData = async () => {
       try {
         const productResponse = await axios.get(
-          `${axiosInstance}/store/products/${id}`
+          `https://farmersconnect.onrender.com/store/products/${id}`
         );
         console.log("Product data received:", productResponse.data);
         setProduct(productResponse.data);
@@ -38,7 +37,7 @@ const ProductDetail = () => {
     const fetchComments = async () => {
       try {
         const commentsResponse = await axios.get(
-          `${axiosInstance}/store/products/${id}/comments`
+          `https://farmersconnect.onrender.com/store/products/${id}/comments`
         );
         console.log("Comments data received:", commentsResponse.data);
         setComments(commentsResponse.data);
@@ -84,7 +83,7 @@ const ProductDetail = () => {
 
     try {
       const response = await axios.post(
-        `${axiosInstance}/store/products/${id}/comments`,
+        `https://farmersconnect.onrender.com/store/products/${id}/comments`,
         { content: newComment }
       );
       console.log("New comment added:", response.data);
