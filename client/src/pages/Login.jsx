@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import axiosInstance from "../utils/axiosInstance";
+import axios from "axios";
+
+const API = import.meta.env.VITE_BACKEND_URL;
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -11,16 +13,24 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) navigate("/");
+  }, [navigate]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const response = await axiosInstance.post("/login", { email, otp });
+      const response = await axios.post(`${API}/login`, {
+        email,
+        otp,
+      });
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("userEmail", email);
-      
+
       login(response.data.token, email);
       navigate("/shop");
     } catch (err) {
@@ -40,9 +50,7 @@ const Login = () => {
           Enter your details to sign in to your account
         </p>
 
-        {error && (
-          <p className="text-red-500 text-center mb-4">{error}</p>
-        )}
+        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
         <form onSubmit={handleLogin}>
           <div className="mb-4">
@@ -70,16 +78,20 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full bg-green-600 text-white py-2 rounded-lg font-semibold transition duration-300 ${loading ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700"
-              }`}
+            className={`w-full bg-green-600 text-white py-2 rounded-lg font-semibold transition duration-300 ${
+              loading ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700"
+            }`}
           >
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
         <p className="text-center text-gray-600 mt-4">
-          Dont have an account?{" "}
-          <Link to="/register" className="text-green-600 font-medium hover:text-green-700">
+          Don't have an account?{" "}
+          <Link
+            to="/register"
+            className="text-green-600 font-medium hover:text-green-700"
+          >
             Register Now
           </Link>
         </p>

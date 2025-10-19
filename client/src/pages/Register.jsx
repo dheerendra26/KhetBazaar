@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+
+const API = import.meta.env.VITE_BACKEND_URL;
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -8,33 +10,31 @@ const Register = () => {
   const [message, setMessage] = useState(null);
   const navigate = useNavigate();
 
-  // Handle form submission
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) navigate("/");
+  }, [navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
 
     try {
-      const response = await axios.post(
-        "https://farmersconnect.onrender.com/register",
-        {
-          email,
-        }
-      );
+      const response = await axios.post(`${API}/register`, {
+        email,
+      });
 
       setMessage({
         type: "success",
-        text:
-          response.data.message || "OTP sent successfully. Check your email.",
+        text: response.data.message || "OTP sent successfully. Check your email.",
       });
 
-      // Redirect to login page
       setTimeout(() => navigate("/login"), 3000);
     } catch (error) {
       setMessage({
         type: "error",
-        text:
-          error.response?.data?.message || "Registration failed. Try again.",
+        text: error.response?.data?.message || "Registration failed. Try again.",
       });
     } finally {
       setLoading(false);

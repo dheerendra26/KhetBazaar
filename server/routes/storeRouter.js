@@ -35,7 +35,6 @@ router.post("/user", async (req, res) => {
       }
 })
 
-// Get a single product by ID
 router.get("/products/:productId", async (req, res) => {
   try {
       const product = await productsModel.findById(req.params.productId);
@@ -50,7 +49,6 @@ router.get("/products/:productId", async (req, res) => {
 });
 
 
-// Get comments for a product
 router.get("/products/:productId/comments", async (req, res) => {
   try {
       const product = await productsModel.findById(req.params.productId);
@@ -65,7 +63,6 @@ router.get("/products/:productId/comments", async (req, res) => {
 });
 
 
-// Post a new comment
 router.post("/products/:productId/comments", async (req, res) => {
   try {
       const { userName, content } = req.body;
@@ -78,7 +75,6 @@ router.post("/products/:productId/comments", async (req, res) => {
           return res.status(404).json({ message: "Product not found" });
       }
 
-      // Add new comment
       const newComment = { userName: userName || "Anonymous", content };
       product.comments.push(newComment);
       await product.save();

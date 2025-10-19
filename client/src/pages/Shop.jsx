@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 
+const API = import.meta.env.VITE_BACKEND_URL;
+
 const Shop = () => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -12,27 +14,21 @@ const Shop = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("token="))
-      ?.split("=")[1];
+    const token = localStorage.getItem("token");
 
     if (!token) {
-      console.error("No token found in cookies");
+      console.error("No token found in localStorage");
       setError("You are not authenticated. Please log in.");
       navigate("/login");
       return;
     }
 
     const config = {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      withCredentials: true,
+      headers: { Authorization: `Bearer ${token}` },
     };
 
     axios
-      .get("https://farmersconnect.onrender.com/store/products", config)
+      .get(`${API}/store/products`, config)
       .then((response) => {
         setProducts(response.data);
         setFilteredProducts(response.data);
@@ -66,25 +62,28 @@ const Shop = () => {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-5">Products</h1>
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex space-x-4 justify-between">
-          <input
-            type="text"
-            name="search"
-            value={filter.search}
-            onChange={handleFilterChange}
-            placeholder="Search products"
-            className="p-2 border rounded-lg w-80"
-          />
+    <div className="px-4 sm:px-6 md:px-10 py-6">
+      <h1 className="text-xl sm:text-2xl font-bold mb-5 text-center sm:text-left">
+        Products
+      </h1>
+
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-5">
+        <input
+          type="text"
+          name="search"
+          value={filter.search}
+          onChange={handleFilterChange}
+          placeholder="Search products"
+          className="p-2 border rounded-lg w-full sm:w-80 text-sm sm:text-base"
+        />
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <input
             type="number"
             name="price"
             value={filter.price}
             onChange={handleFilterChange}
             placeholder="Max Price"
-            className="p-2 border rounded-lg w-32"
+            className="p-2 border rounded-lg w-full sm:w-32 text-sm sm:text-base"
           />
           <input
             type="text"
@@ -92,20 +91,21 @@ const Shop = () => {
             value={filter.location}
             onChange={handleFilterChange}
             placeholder="Location"
-            className="p-2 border rounded-lg w-32"
+            className="p-2 border rounded-lg w-full sm:w-32 text-sm sm:text-base"
           />
         </div>
       </div>
 
-      {error && <p className="text-red-500">{error}</p>}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      {error && <p className="text-red-500 text-sm sm:text-base mb-3">{error}</p>}
+
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
         {filteredProducts.map((product) => (
           <Link
             to={`/product/${product._id}`}
             key={product._id}
-            className="border p-4 rounded-lg shadow-md bg-white flex flex-col justify-between hover:shadow-lg transition duration-300"
+            className="border p-3 sm:p-4 rounded-lg shadow-md bg-white flex flex-col justify-between hover:shadow-lg transition duration-300"
           >
-            <div className="relative pb-[70%] mb-4">
+            <div className="relative pb-[70%] mb-3 sm:mb-4">
               <img
                 src={product.image}
                 alt={product.name}
@@ -113,16 +113,20 @@ const Shop = () => {
               />
             </div>
             <div>
-              <h2 className="text-lg font-semibold">{product.name}</h2>
-              <p className="text-gray-600 mb-2 line-clamp-2">
+              <h2 className="text-base sm:text-lg font-semibold truncate">
+                {product.name}
+              </h2>
+              <p className="text-gray-600 mb-1 sm:mb-2 text-xs sm:text-sm line-clamp-2">
                 {product.description}
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-gray-500 text-xs sm:text-sm">
                 Location: {product.location}
               </p>
-              <p className="text-green-500 font-bold mt-2">₹{product.price}</p>
+              <p className="text-green-600 font-semibold mt-2 text-sm sm:text-base">
+                ₹{product.price}
+              </p>
             </div>
-            <div className="mt-4 text-blue-600 text-sm font-medium">
+            <div className="mt-3 text-blue-600 text-xs sm:text-sm font-medium text-center sm:text-left">
               View details
             </div>
           </Link>

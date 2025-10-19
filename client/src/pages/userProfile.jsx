@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+const API = import.meta.env.VITE_BACKEND_URL;
+
 function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString("en-US", {
     year: "numeric",
@@ -29,17 +31,14 @@ function UserProfile() {
       try {
         setLoading(true);
 
-        // Get email from localStorage
         const email = localStorage.getItem("userEmail");
 
         if (!email) {
           throw new Error("Email is required. Please log in.");
         }
 
-        // Use the correct API URL
-        const apiUrl = `https://farmersconnect.onrender.com/store/user`;
+        const apiUrl = `${API}/store/user`;
 
-        // Make POST request with JSON body
         const response = await fetch(apiUrl, {
           method: "POST",
           headers: {
@@ -71,7 +70,7 @@ function UserProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="bg-white flex items-center justify-center">
         <div className="text-center p-6">
           <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading profile data...</p>
@@ -82,7 +81,7 @@ function UserProfile() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="bg-white flex items-center justify-center">
         <div className="text-center p-6 max-w-md">
           <div className="text-red-500 text-5xl mb-4">!</div>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
@@ -102,7 +101,7 @@ function UserProfile() {
 
   if (!userData) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className=" bg-white flex items-center justify-center">
         <div className="text-center p-6">
           <p className="text-gray-600">No user data available</p>
         </div>
@@ -111,9 +110,8 @@ function UserProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-white p-6 md:p-12">
+    <div className=" bg-white p-6 md:p-12">
       <div className="max-w-4xl mx-auto">
-        {/* Profile Header */}
         <div className="bg-green-50 rounded-xl p-8 mb-8 shadow-sm">
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
@@ -139,7 +137,6 @@ function UserProfile() {
           </div>
         </div>
 
-        {/* Orders Section */}
         <div>
           <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
             <Package className="text-green-600" />

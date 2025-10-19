@@ -4,7 +4,6 @@ import { assets } from "../assets/assets";
 const Home = () => {
   return (
     <div className="bg-gradient-to-b from-green-100 to-green-50 min-h-screen">
-      {/* Hero Section */}
       <section className="flex flex-col md:flex-row items-center px-8 py-20 gap-8">
         <div className="md:w-1/2 text-left">
           <h1 className="text-5xl font-bold text-green-800 mb-4">
@@ -30,7 +29,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Customer and Farmer Section */}
       <section className="flex flex-col md:flex-row items-center justify-center gap-8 px-8 py-20 bg-green-200">
         <div className="w-full md:w-1/3 bg-white p-8 rounded-lg shadow-lg text-center">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">I am a Customer</h2>
@@ -58,7 +56,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Image and Text Placeholder Section */}
       <section className="flex flex-wrap justify-center gap-8 px-8 py-20 bg-green-50">
         <div className="w-full md:w-1/3 bg-white p-4 rounded-lg shadow-md text-center">
           <img

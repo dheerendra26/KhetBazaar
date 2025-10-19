@@ -4,25 +4,33 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userEmail, setUserEmail] = useState(null);
 
   useEffect(() => {
-    // Check if token exists in cookies/localStorage for session persistence
-    const token = document.cookie.split("; ").find((row) => row.startsWith("token="));
-    if (token) setIsAuthenticated(true);
+    const token = localStorage.getItem("token");
+    const email = localStorage.getItem("userEmail");
+    if (token) {
+      setIsAuthenticated(true);
+      setUserEmail(email);
+    }
   }, []);
 
-  const login = (token) => {
-    document.cookie = `token=${token}; path=/`; // Store token in cookies
+  const login = (token, email) => {
+    localStorage.setItem("token", token);
+    localStorage.setItem("userEmail", email);
     setIsAuthenticated(true);
+    setUserEmail(email);
   };
 
   const logout = () => {
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+    localStorage.removeItem("token");
+    localStorage.removeItem("userEmail");
     setIsAuthenticated(false);
+    setUserEmail(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, userEmail, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

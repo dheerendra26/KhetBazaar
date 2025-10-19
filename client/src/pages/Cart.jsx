@@ -4,6 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import { ShoppingCart } from "lucide-react";
 
+const API = import.meta.env.VITE_BACKEND_URL;
+
 const Cart = () => {
   const [cart, setCart] = useState([]);
   const [error, setError] = useState("");
@@ -50,7 +52,6 @@ const Cart = () => {
       return;
     }
 
-    // Check if we have all the required data
     const invalidItems = cart.filter((item) => !item.sellerEmail);
     if (invalidItems.length > 0) {
       setError(
@@ -75,7 +76,7 @@ const Cart = () => {
       console.log("Sending order data:", orderData);
 
       const response = await axios.post(
-        "https://farmersconnect.onrender.com/orders",
+        `${API}/orders`,
         orderData
       );
       console.log("Order response:", response.data);
@@ -130,7 +131,6 @@ const Cart = () => {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          {/* Cart Items */}
           <div className="divide-y">
             {cart.map((item) => (
               <div key={item._id} className="p-4 flex items-center">
@@ -184,7 +184,6 @@ const Cart = () => {
             ))}
           </div>
 
-          {/* Cart Summary */}
           <div className="bg-gray-50 p-6">
             <div className="flex justify-between mb-2">
               <span>Subtotal</span>

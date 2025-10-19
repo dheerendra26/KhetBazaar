@@ -44,7 +44,7 @@ router.post("/", async (req, res) => {
           </div>
           <div class="content">
             <p>Dear Customer,</p>
-            <p>Thank you for your purchase from Farmers Mart! Below are your order details:</p>
+            <p>Thank you for your purchase from AgriLinker! Below are your order details:</p>
             
             <h3>Order Summary:</h3>
             ${items
@@ -68,7 +68,7 @@ router.post("/", async (req, res) => {
             <p>The sellers have been notified and will contact you soon regarding delivery.</p>
           </div>
           <div class="footer">
-            <p>This is an automated message from Farmers Mart. Please do not reply to this email.</p>
+            <p>This is an automated message from AgriLinker. Please do not reply to this email.</p>
           </div>
         </div>
       </body>
@@ -76,17 +76,15 @@ router.post("/", async (req, res) => {
     `;
 
     await transporter.sendMail({
-      from: `"Farmers Mart" <${process.env.EMAIL_USER}>`,
+      from: `"AgriLinker" <${process.env.EMAIL_USER}>`,
       to: buyerEmail,
-      subject: "Order Confirmation - Farmers Mart",
+      subject: "Order Confirmation - AgriLinker",
       html: buyerEmailContent,
     });
 
-    // Add items to user's order history
     const user = await userModel.findOne({ email: buyerEmail });
 
     if (user) {
-      // Create order items that match the orderItemSchema structure
       const orderItemsWithDate = items.map((item) => ({
         productName: item.productName,
         productPrice: item.productPrice,
@@ -96,13 +94,11 @@ router.post("/", async (req, res) => {
         orderDate: new Date(),
       }));
 
-      // Add the items to the user's orders array
       user.orders.push(...orderItemsWithDate);
       await user.save();
     } else {
       console.log(`User with email ${buyerEmail} not found in database`);
     }
-
 
     const sellerItems = items.reduce((acc, item) => {
       if (!acc[item.sellerEmail]) {
@@ -139,7 +135,7 @@ router.post("/", async (req, res) => {
             </div>
             <div class="content">
               <p>Dear Seller,</p>
-              <p>You have received a new order from Farmers Mart!</p>
+              <p>You have received a new order from AgriLinker!</p>
               
               <div class="buyer-info">
                 <h3>Buyer Information:</h3>
@@ -167,7 +163,7 @@ router.post("/", async (req, res) => {
               <p>Please contact the buyer at ${buyerEmail} to arrange delivery.</p>
             </div>
             <div class="footer">
-              <p>This is an automated message from Farmers Mart. Please do not reply to this email.</p>
+              <p>This is an automated message from AgriLinker. Please do not reply to this email.</p>
             </div>
           </div>
         </body>
@@ -175,9 +171,9 @@ router.post("/", async (req, res) => {
       `;
 
       await transporter.sendMail({
-        from: `"Farmers Mart" <${process.env.EMAIL_USER}>`,
+        from: `"AgriLinker" <${process.env.EMAIL_USER}>`,
         to: sellerEmail,
-        subject: "New Order Received - Farmers Mart",
+        subject: "New Order Received - AgriLinker",
         html: sellerEmailContent,
       });
     }

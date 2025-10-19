@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 
+const API = import.meta.env.VITE_BACKEND_URL;
+
 const ProductDetail = () => {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
@@ -24,7 +26,7 @@ const ProductDetail = () => {
     const fetchProductData = async () => {
       try {
         const productResponse = await axios.get(
-          `https://farmersconnect.onrender.com/store/products/${id}`
+          `${API}/store/products/${id}`
         );
         console.log("Product data received:", productResponse.data);
         setProduct(productResponse.data);
@@ -37,7 +39,7 @@ const ProductDetail = () => {
     const fetchComments = async () => {
       try {
         const commentsResponse = await axios.get(
-          `https://farmersconnect.onrender.com/store/products/${id}/comments`
+          `${API}/store/products/${id}/comments`
         );
         console.log("Comments data received:", commentsResponse.data);
         setComments(commentsResponse.data);
@@ -83,7 +85,7 @@ const ProductDetail = () => {
 
     try {
       const response = await axios.post(
-        `https://farmersconnect.onrender.com/store/products/${id}/comments`,
+        `${API}/store/products/${id}/comments`,
         { content: newComment }
       );
       console.log("New comment added:", response.data);
@@ -114,7 +116,6 @@ const ProductDetail = () => {
             <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
             <p className="text-gray-700 mb-4">{product.description}</p>
 
-            {/* Seller Details Section */}
             <div className="mb-6 p-4 bg-gray-100 rounded-lg">
               <h2 className="text-xl font-bold mb-2">Seller Details</h2>
               <p>

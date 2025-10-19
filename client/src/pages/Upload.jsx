@@ -1,6 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
 
+const API = import.meta.env.VITE_BACKEND_URL;
+
 const Upload = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -24,7 +26,7 @@ const Upload = () => {
 
     try {
       const response = await axios.post(
-        "https://farmersconnect.onrender.com/products/post",
+        `${API}/products/post`,
         formData
       );
 

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
+const API = import.meta.env.VITE_BACKEND_URL;
+
 const DeleteProduct = () => {
   const [productId, setProductId] = useState("");
   const [message, setMessage] = useState("");
@@ -31,7 +33,7 @@ const DeleteProduct = () => {
       };
 
       await axios.delete(
-        `https://farmersconnect.onrender.com/products/delete/${productId}`,
+        `${API}/products/delete/${productId}`,
         config
       );
 

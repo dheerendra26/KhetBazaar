@@ -62,7 +62,6 @@ const CheckoutPage = () => {
                 <h1>Checkout</h1>
 
                 <form onSubmit={handleSubmit}>
-                    {/* Name */}
                     <div style={{ marginBottom: '15px' }}>
                         <label htmlFor="name" style={{ display: 'block', marginBottom: '5px' }}>
                             Name:
@@ -78,7 +77,6 @@ const CheckoutPage = () => {
                         />
                     </div>
 
-                    {/* Address */}
                     <div style={{ marginBottom: '15px' }}>
                         <label htmlFor="address" style={{ display: 'block', marginBottom: '5px' }}>
                             Address:
@@ -93,7 +91,6 @@ const CheckoutPage = () => {
                         />
                     </div>
 
-                    {/* Payment Method */}
                     <div style={{ marginBottom: '15px' }}>
                         <label htmlFor="paymentMethod" style={{ display: 'block', marginBottom: '5px' }}>
                             Payment Method:
@@ -111,7 +108,6 @@ const CheckoutPage = () => {
                         </select>
                     </div>
 
-                    {/* Card Details */}
                     {formData.paymentMethod !== 'paypal' && (
                         <>
                             <div style={{ marginBottom: '15px' }}>

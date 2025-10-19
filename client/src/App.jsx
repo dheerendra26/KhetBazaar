@@ -8,21 +8,29 @@ import Shop from "./pages/Shop";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
-import CheckoutPage from './pages/CheckoutPage.jsx';
+import CheckoutPage from "./pages/CheckoutPage.jsx";
 import DeleteProduct from "./pages/Delete.jsx";
-import ProductDetails from "./pages/ProductDetails.jsx"
+import ProductDetails from "./pages/ProductDetails.jsx";
 import UserProfile from "./pages/userProfile.jsx";
 import Cart from "./pages/Cart.jsx";
 import { AuthProvider } from "./context/AuthContext";
+
+const Layout = ({ children }) => (
+  <div className="flex flex-col min-h-screen">
+    <Navbar />
+    <main className="flex-grow">{children}</main>
+    <Footer />
+  </div>
+);
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: (
       <>
-        <Navbar />
-        <Home />
-        <Footer />
+        <Layout>
+          <Home />
+        </Layout>
       </>
     ),
   },
@@ -30,9 +38,9 @@ const router = createBrowserRouter([
     path: "/about",
     element: (
       <>
-        <Navbar />
-        <About />
-        <Footer />
+        <Layout>
+          <About />
+        </Layout>
       </>
     ),
   },
@@ -40,9 +48,9 @@ const router = createBrowserRouter([
     path: "/shop",
     element: (
       <>
-        <Navbar />
-        <Shop />
-        <Footer />
+        <Layout>
+          <Shop />
+        </Layout>
       </>
     ),
   },
@@ -50,9 +58,9 @@ const router = createBrowserRouter([
     path: "/login",
     element: (
       <>
-        <Navbar />
-        <Login />
-        <Footer />
+        <Layout>
+          <Login />
+        </Layout>
       </>
     ),
   },
@@ -60,9 +68,9 @@ const router = createBrowserRouter([
     path: "/register",
     element: (
       <>
-        <Navbar />
-        <Register />
-        <Footer />
+        <Layout>
+          <Register />
+        </Layout>
       </>
     ),
   },
@@ -70,11 +78,11 @@ const router = createBrowserRouter([
     path: "/upload",
     element: (
       <>
-        <Navbar />
-        <ProtectedRoute>
-          <Upload />
-        </ProtectedRoute>
-        <Footer />
+        <Layout>
+          <ProtectedRoute>
+            <Upload />
+          </ProtectedRoute>
+        </Layout>
       </>
     ),
   },
@@ -82,11 +90,11 @@ const router = createBrowserRouter([
     path: "/checkout",
     element: (
       <>
-        <Navbar />
-        <ProtectedRoute>
-          <CheckoutPage />
-        </ProtectedRoute>
-        <Footer />
+        <Layout>
+          <ProtectedRoute>
+            <CheckoutPage />
+          </ProtectedRoute>
+        </Layout>
       </>
     ),
   },
@@ -94,11 +102,11 @@ const router = createBrowserRouter([
     path: "/profile",
     element: (
       <>
-        <Navbar />
-        <ProtectedRoute>
-          <UserProfile />
-        </ProtectedRoute>
-        <Footer />
+        <Layout>
+          <ProtectedRoute>
+            <UserProfile />
+          </ProtectedRoute>
+        </Layout>
       </>
     ),
   },
@@ -106,12 +114,12 @@ const router = createBrowserRouter([
     path: "/cart",
     element: (
       <>
-        <Navbar />
-        <ProtectedRoute>
-          <Cart />
-          <UserProfile />
-        </ProtectedRoute>
-        <Footer />
+        <Layout>
+          <ProtectedRoute>
+            <Cart />
+            <UserProfile />
+          </ProtectedRoute>
+        </Layout>
       </>
     ),
   },
@@ -119,9 +127,9 @@ const router = createBrowserRouter([
     path: "/product/:id",
     element: (
       <>
-        <Navbar />
-        <ProductDetails />
-        <Footer />
+        <Layout>
+          <ProductDetails />
+        </Layout>
       </>
     ),
   },
@@ -129,13 +137,12 @@ const router = createBrowserRouter([
     path: "/delete",
     element: (
       <>
-        <Navbar />
-        <DeleteProduct />
-        <Footer />
+        <Layout>
+          <DeleteProduct />
+        </Layout>
       </>
     ),
-  }
-
+  },
 ]);
 
 const App = () => {
