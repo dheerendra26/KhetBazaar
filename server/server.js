@@ -34,6 +34,10 @@ app.use("/store", storeRouter);
 app.use("/products", ProductRouter);
 app.use("/orders", order);
 
+app.get("/api/wake-up", (req, res) => {
+  res.status(200).send("Backend awake and running!");
+});
+
 app.listen(PORT, () => {
     console.log(`server is running on port: ${PORT}`);
 })
