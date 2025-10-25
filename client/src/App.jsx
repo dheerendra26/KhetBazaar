@@ -15,6 +15,7 @@ import UserProfile from "./pages/userProfile.jsx";
 import Cart from "./pages/Cart.jsx";
 import { AuthProvider } from "./context/AuthContext";
 import { warmUpBackend } from "./utils/coldStarts.js";
+import React from "react";
 
 const Layout = ({ children }) => (
   <div className="flex flex-col min-h-screen">
