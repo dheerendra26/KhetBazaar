@@ -14,6 +14,7 @@ import ProductDetails from "./pages/ProductDetails.jsx";
 import UserProfile from "./pages/userProfile.jsx";
 import Cart from "./pages/Cart.jsx";
 import { AuthProvider } from "./context/AuthContext";
+import { warmUpBackend } from "./utils/coldStarts.js";
 
 const Layout = ({ children }) => (
   <div className="flex flex-col min-h-screen">
@@ -146,6 +147,10 @@ const router = createBrowserRouter([
 ]);
 
 const App = () => {
+  React.useEffect(() => {
+    warmUpBackend(); 
+  }, []);
+  
   return (
     <AuthProvider>
       <RouterProvider router={router} />
