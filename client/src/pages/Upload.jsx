@@ -30,8 +30,6 @@ const Upload = () => {
         formData
       );
 
-      console.log("Product uploaded successfully:", response.data);
-
       alert("Product uploaded successfully!");
       setFormData({
         name: "",

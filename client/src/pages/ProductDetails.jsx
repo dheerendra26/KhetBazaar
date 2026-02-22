@@ -15,20 +15,17 @@ const ProductDetail = () => {
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    console.log("Product ID from params:", id);
     if (!id) {
       console.error("Invalid product ID.");
       setError("Invalid product ID.");
       return;
     }
-    console.log("Fetching data for product ID:", id);
 
     const fetchProductData = async () => {
       try {
         const productResponse = await axios.get(
           `${API}/store/products/${id}`
         );
-        console.log("Product data received:", productResponse.data);
         setProduct(productResponse.data);
       } catch (err) {
         console.error("Error fetching product:", err);
@@ -41,7 +38,6 @@ const ProductDetail = () => {
         const commentsResponse = await axios.get(
           `${API}/store/products/${id}/comments`
         );
-        console.log("Comments data received:", commentsResponse.data);
         setComments(commentsResponse.data);
       } catch (err) {
         console.error("Error fetching comments:", err);
@@ -88,7 +84,6 @@ const ProductDetail = () => {
         `${API}/store/products/${id}/comments`,
         { content: newComment }
       );
-      console.log("New comment added:", response.data);
       setComments([...comments, response.data]);
       setNewComment("");
     } catch (error) {

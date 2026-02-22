@@ -73,13 +73,11 @@ const Cart = () => {
         })),
       };
 
-      console.log("Sending order data:", orderData);
 
       const response = await axios.post(
         `${API}/orders`,
         orderData
       );
-      console.log("Order response:", response.data);
 
       clearCart();
       navigate("/checkout", { state: { orderData } });

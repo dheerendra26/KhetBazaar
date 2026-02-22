@@ -25,7 +25,6 @@ const CheckoutPage = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('Form submitted:', formData);
         alert("Thank you for your purchase! You will receive an email confirmation shortly.");
     };
 
