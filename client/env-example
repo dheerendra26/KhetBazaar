@@ -1,1 +1,2 @@
-VITE_BACKEND_URL=your_backend_url
+VITE_BACKEND_URL=http://localhost:4000
+VITE_OPENWEATHER_API_KEY=your_open_weather_api_key
