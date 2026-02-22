@@ -4,3 +4,6 @@ PORT=4000
 MONGO_URI="your_mongodb_url"
 JWT_SECRET="your_jwt_secret"
 NODE_ENV="development"
+BREVO_API_KEY=
+BREVO_SENDER_NAME=
+BREVO_SENDER_EMAIL=
