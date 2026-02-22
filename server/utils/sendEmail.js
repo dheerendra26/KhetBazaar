@@ -1,35 +1,72 @@
-if (process.env.NODE_ENV !== 'production') {
-    require('dotenv').config();
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
 }
+
 const nodemailer = require("nodemailer");
+const axios = require("axios");
 
-// const transporter = nodemailer.createTransport({
-//     service: "gmail",
-//     auth: {
-//         user: process.env.EMAIL_USER,
-//         pass: process.env.EMAIL_PASS
-//     },
-//     host: "smtp.gmail.com",
-//     port: 587,
-//     secure: false, 
-//     requireTLS: true,
-//     tls: {
-//         rejectUnauthorized: false
-//     }
-// });
+/* ---------------- DEV: Gmail Transporter ---------------- */
 
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
+const gmailTransporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  requireTLS: true,
+  tls: {
+    rejectUnauthorized: false
+  }
 });
+
+/* ---------------- PROD: Brevo API Sender ---------------- */
+
+const sendBrevoEmail = async ({ to, subject, html }) => {
+  const response = await axios.post(
+    "https://api.brevo.com/v3/smtp/email",
+    {
+      sender: {
+        name: process.env.BREVO_SENDER_NAME,
+        email: process.env.BREVO_SENDER_EMAIL,
+      },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    },
+    {
+      headers: {
+        "api-key": process.env.BREVO_API_KEY,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return response.data;
+};
+
+/* ---------------- Unified Mail Sender ---------------- */
+
+const sendMail = async ({ to, subject, html }) => {
+  if (process.env.NODE_ENV === "production") {
+    return sendBrevoEmail({ to, subject, html });
+  }
+
+  return gmailTransporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to,
+    subject,
+    html,
+  });
+};
+
+/* ---------------- Our Utility Functions ---------------- */
 
 const sendOTPEmail = async (email, otp) => {
     try {
         const mailOptions = {
-            from: process.env.EMAIL_USER,
             to: email,
             subject: "one-time-pass for Echos Vault",
             html: `
@@ -44,7 +81,7 @@ const sendOTPEmail = async (email, otp) => {
             `
         };
 
-        const result = await transporter.sendMail(mailOptions);
+        const result = await sendMail(mailOptions);
         return {
             success: true,
             message: 'OTP sent successfully',
@@ -64,7 +101,6 @@ const sendOTPEmail = async (email, otp) => {
 const sendListingConfirmationEmail = async (email, product) => {
     try {
         const mailOptions = {
-            from: process.env.EMAIL_USER,
             to: email,
             subject: "Your Product Listing is Live!",
             html: `
@@ -84,7 +120,7 @@ const sendListingConfirmationEmail = async (email, product) => {
             `
         };
 
-        const result = await transporter.sendMail(mailOptions);
+        const result = await sendMail(mailOptions);
         return {
             success: true,
             message: "Listing confirmation email sent successfully",
@@ -103,7 +139,6 @@ const sendListingConfirmationEmail = async (email, product) => {
 const sendListingDeletionEmail = async (email, product) => {
     try {
         const mailOptions = {
-            from: process.env.EMAIL_USER,
             to: email,
             subject: "Your Product Listing Has Been Removed",
             html: `
@@ -123,7 +158,7 @@ const sendListingDeletionEmail = async (email, product) => {
             `
         };
 
-        const result = await transporter.sendMail(mailOptions);
+        const result = await sendMail(mailOptions);
         return { success: true, message: "Listing deletion email sent successfully", result };
     } catch (err) {
         console.error("Error sending listing deletion email:", err);
@@ -133,6 +168,7 @@ const sendListingDeletionEmail = async (email, product) => {
 
 
 module.exports = {
+    sendMail,
     sendOTPEmail,
     sendListingConfirmationEmail,
     sendListingDeletionEmail

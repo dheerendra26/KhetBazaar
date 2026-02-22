@@ -1,15 +1,7 @@
 const express = require("express");
-const nodemailer = require("nodemailer");
+const { sendMail } = require('../utils/sendEmail');
 const userModel = require("../models/userModel");
 const router = express.Router();
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat("en-IN", {
@@ -75,8 +67,7 @@ router.post("/", async (req, res) => {
       </html>
     `;
 
-    await transporter.sendMail({
-      from: `"AgriLinker" <${process.env.EMAIL_USER}>`,
+    await sendMail({
       to: buyerEmail,
       subject: "Order Confirmation - AgriLinker",
       html: buyerEmailContent,
@@ -170,8 +161,7 @@ router.post("/", async (req, res) => {
         </html>
       `;
 
-      await transporter.sendMail({
-        from: `"AgriLinker" <${process.env.EMAIL_USER}>`,
+      await sendMail({
         to: sellerEmail,
         subject: "New Order Received - AgriLinker",
         html: sellerEmailContent,
