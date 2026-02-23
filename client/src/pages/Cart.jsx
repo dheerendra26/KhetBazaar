@@ -79,6 +79,7 @@ const Cart = () => {
         orderData
       );
 
+
       clearCart();
       navigate("/checkout", { state: { orderData } });
     } catch (error) {

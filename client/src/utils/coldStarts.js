@@ -1,7 +1,7 @@
 // this is a personal file to start backend of all my projects. you can delete this file and the useEffect from ../App.js. Still the website will work fine
 const urls = [
   "https://farmersconnect.onrender.com/api/wake-up",
-  //   "http://localhost:4000/api/wake-up",
+    // "http://localhost:4000/api/wake-up",
 ];
 
 export const warmUpBackend = async () => {
