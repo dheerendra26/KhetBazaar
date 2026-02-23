@@ -10,7 +10,8 @@ const DB = require("./config/mongooseConnection");
 const indexRouter = require("./routes/indexRouter");
 const storeRouter = require("./routes/storeRouter");
 const order = require("./routes/handleProductsRoute");
-const ProductRouter = require("./routes/postProductRoute");
+const productRouter = require("./routes/postProductRoute");
+const razorPayRouter = require("./routes/razorPayRoute");
 
 const PORT = process.env.PORT || 3000;
 const corsOptions = {
@@ -31,8 +32,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use("/", indexRouter);
 app.use("/store", storeRouter);
-app.use("/products", ProductRouter);
+app.use("/products", productRouter);
 app.use("/orders", order);
+app.use("/payments/razorpay", razorPayRouter);
 
 app.get("/api/wake-up", (req, res) => {
   res.status(200).send("Backend awake and running!");
