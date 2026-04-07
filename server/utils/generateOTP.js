@@ -1,5 +1,5 @@
 const generateOTP = () => {
-    return String(Math.floor(10000 + Math.random() * 90000));
+    return String(Math.floor(100000 + Math.random() * 900000));
   };
   
   module.exports.generateOTP = generateOTP;

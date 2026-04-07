@@ -1,30 +1,39 @@
 import React, { useState, useEffect } from "react";
-import {
-  Package,
-  User,
-  MapPin,
-  Phone,
-  Mail,
-  Calendar,
-  IndianRupee,
-} from "lucide-react";
+import { Package, MapPin, Phone, Mail, Calendar, IndianRupee, ShoppingBag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useLang } from "../context/LanguageContext";
 
 const API = import.meta.env.VITE_BACKEND_URL;
 
 function formatDate(dateString) {
-  return new Date(dateString).toLocaleDateString("en-US", {
+  return new Date(dateString).toLocaleDateString("en-IN", {
     year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
   });
 }
+
+const statusColors = {
+  placed: "bg-gray-100 text-gray-700",
+  packed: "bg-yellow-100 text-yellow-700",
+  out_for_delivery: "bg-blue-100 text-blue-700",
+  delivered: "bg-green-100 text-green-700",
+};
+
+const statusLabels = {
+  placed: "📦 Placed",
+  packed: "🗃️ Packed",
+  out_for_delivery: "🚚 Out for Delivery",
+  delivered: "✅ Delivered",
+};
 
 function UserProfile() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const navigate = useNavigate();
+  const { t } = useLang();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -32,33 +41,22 @@ function UserProfile() {
         setLoading(true);
 
         const email = localStorage.getItem("userEmail");
+        if (!email) throw new Error("Email is required. Please log in.");
 
-        if (!email) {
-          throw new Error("Email is required. Please log in.");
-        }
-
-        const apiUrl = `${API}/store/user`;
-
-        const response = await fetch(apiUrl, {
+        const response = await fetch(`${API}/store/user`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email }),
         });
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(
-            errorData.message ||
-              `API request failed with status ${response.status}`
-          );
+          throw new Error(errorData.message || `API failed: ${response.status}`);
         }
 
         const data = await response.json();
         setUserData(data);
       } catch (err) {
-        console.error("Error fetching user data:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -70,120 +68,87 @@ function UserProfile() {
 
   if (loading) {
     return (
-      <div className="bg-white flex items-center justify-center">
-        <div className="text-center p-6">
-          <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading profile data...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <p>{t("loading") || "Loading..."}</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-white flex items-center justify-center">
-        <div className="text-center p-6 max-w-md">
-          <div className="text-red-500 text-5xl mb-4">!</div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            Error Loading Profile
-          </h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <p>{error}</p>
       </div>
     );
   }
 
-  if (!userData) {
-    return (
-      <div className=" bg-white flex items-center justify-center">
-        <div className="text-center p-6">
-          <p className="text-gray-600">No user data available</p>
-        </div>
-      </div>
-    );
-  }
+  if (!userData) return null;
+
+  const roleLabel =
+    userData.role === 2
+      ? "🚜 Farmer"
+      : userData.role === 3
+      ? "🛒 Customer & Farmer"
+      : "🛒 Customer";
+
+  const recentOrders = (userData.orders || []).slice(-3).reverse();
+
+  const totalSpent = (userData.orders || []).reduce(
+    (sum, order) => sum + (order.totalPrice || 0),
+    0
+  );
 
   return (
-    <div className=" bg-white p-6 md:p-12">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-green-50 rounded-xl p-8 mb-8 shadow-sm">
-          <div className="flex items-start justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-                <User className="text-green-600" />
-                {userData.name}
-              </h1>
-              <div className="space-y-2 text-gray-600">
-                <p className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-orange-500" />
-                  {userData.email}
-                </p>
-                <p className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-orange-500" />
-                  {userData.contact}
-                </p>
-                <p className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-orange-500" />
-                  {userData.address}
-                </p>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-5xl mx-auto space-y-6">
+
+        {/* Header */}
+        <div className="bg-green-600 text-white p-6 rounded-xl">
+          <h1 className="text-xl font-bold">
+            {userData.name || "User"}
+          </h1>
+          <p>{roleLabel}</p>
+          <p>{userData.email}</p>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <p className="font-bold">{userData.orders?.length || 0}</p>
+            <p>Total Orders</p>
+          </div>
+          <div>
+            <p className="font-bold">₹{totalSpent}</p>
+            <p>Total Spent</p>
+          </div>
+          <div>
+            <p className="font-bold">₹{userData.walletBalance || 0}</p>
+            <p>Wallet</p>
           </div>
         </div>
 
-        <div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
-            <Package className="text-green-600" />
-            Order History
-          </h2>
+        {/* Orders */}
+        <div className="bg-white p-4 rounded-xl">
+          <h2 className="font-bold mb-4">Recent Orders</h2>
 
-          <div className="space-y-4">
-            {userData.orders && userData.orders.length > 0 ? (
-              userData.orders.map((order) => (
-                <div
-                  key={order._id.toString()}
-                  className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex justify-between items-start flex-wrap gap-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                        {order.productName}
-                      </h3>
-                      <div className="space-y-2 text-gray-600">
-                        <p className="flex items-center gap-2">
-                          <IndianRupee className="w-4 h-4 text-orange-500" />
-                          Price: ₹{order.productPrice} × {order.quantity}
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-orange-500" />
-                          Ordered on: {formatDate(order.orderDate)}
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <Mail className="w-4 h-4 text-orange-500" />
-                          Seller: {order.sellerEmail}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="bg-green-50 px-4 py-2 rounded-lg">
-                      <p className="text-green-800 font-semibold">
-                        Total: ₹{order.totalPrice}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No orders found
+          {recentOrders.length > 0 ? (
+            recentOrders.map((order) => (
+              <div key={order._id} className="border-b py-3">
+                <p>{order.productName}</p>
+                <p>
+                  ₹{order.productPrice} × {order.quantity}
+                </p>
+                <p>{formatDate(order.orderDate)}</p>
+                <p>{order.sellerEmail}</p>
+
+                <span className={statusColors[order.status]}>
+                  {statusLabels[order.status] || order.status}
+                </span>
               </div>
-            )}
-          </div>
+            ))
+          ) : (
+            <p>No orders yet</p>
+          )}
         </div>
       </div>
     </div>

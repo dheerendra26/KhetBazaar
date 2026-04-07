@@ -1,187 +1,124 @@
 const express = require("express");
-const { sendMail } = require('../utils/sendEmail');
+const { sendMail } = require("../utils/sendEmail");
 const userModel = require("../models/userModel");
+const Product = require("../models/productModel");
 const router = express.Router();
 
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-  }).format(amount);
-};
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(amount);
 
 router.post("/", async (req, res) => {
-  const { buyerEmail, items } = req.body;
+  const { buyerEmail, items, paymentMethod } = req.body;
 
   try {
-    const totalPrice = items.reduce((sum, item) => sum + item.productPrice, 0);
+    const totalPrice = items.reduce((sum, item) => sum + item.productPrice * item.quantity, 0);
 
-    const buyerEmailContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          .container { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; }
-          .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
-          .content { padding: 20px; }
-          .order-item { border-bottom: 1px solid #eee; padding: 10px 0; }
-          .total { font-size: 18px; font-weight: bold; margin-top: 20px; }
-          .footer { background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h2>Order Confirmation</h2>
-          </div>
-          <div class="content">
-            <p>Dear Customer,</p>
-            <p>Thank you for your purchase from AgriLinker! Below are your order details:</p>
-            
-            <h3>Order Summary:</h3>
-            ${items
-              .map(
-                (item) => `
-              <div class="order-item">
-                <p><strong>Product:</strong> ${item.productName}</p>
-                <p><strong>Price:</strong> ${formatCurrency(
-                  item.productPrice
-                )}</p>
-                <p><strong>Seller Email:</strong> ${item.sellerEmail}</p>
-              </div>
-            `
-              )
-              .join("")}
-            
-            <div class="total">
-              <p>Total Amount: ${formatCurrency(totalPrice)}</p>
-            </div>
-            
-            <p>The sellers have been notified and will contact you soon regarding delivery.</p>
-          </div>
-          <div class="footer">
-            <p>This is an automated message from AgriLinker. Please do not reply to this email.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+    let user;
 
-    await sendMail({
-      to: buyerEmail,
-      subject: "Order Confirmation - AgriLinker",
-      html: buyerEmailContent,
-    });
+    // Wallet payment: atomic conditional deduction (prevents race conditions)
+    if (paymentMethod === "wallet") {
+      user = await userModel.findOneAndUpdate(
+        { email: buyerEmail, walletBalance: { $gte: totalPrice } },
+        { $inc: { walletBalance: -totalPrice } },
+        { new: true }
+      );
+      if (!user) {
+        const existing = await userModel.findOne({ email: buyerEmail }).select("walletBalance");
+        const balance = existing?.walletBalance ?? 0;
+        return res.status(400).json({
+          message: "Insufficient wallet balance",
+          walletBalance: balance,
+          required: totalPrice,
+        });
+      }
+    } else {
+      user = await userModel.findOne({ email: buyerEmail });
+    }
 
-    const user = await userModel.findOne({ email: buyerEmail });
+    // Cash on Delivery: no balance check needed
+
+    const buyerEmailContent = `<!DOCTYPE html><html><body style="font-family:Arial;max-width:600px;margin:auto">
+      <div style="background:#4CAF50;color:white;padding:20px;text-align:center"><h2>Order Confirmation ✅</h2></div>
+      <div style="padding:20px">
+        <p>Dear Customer, thank you for your purchase from <strong>KhetBazaar</strong>!</p>
+        <p><strong>Payment Method:</strong> ${paymentMethod === "cod" ? "Cash on Delivery" : paymentMethod === "wallet" ? "Wallet" : "Online Payment"}</p>
+        <h3>Order Summary:</h3>
+        ${items.map(item => `<div style="border-bottom:1px solid #eee;padding:10px 0">
+          <p><strong>${item.productName}</strong></p>
+          <p>Price: ${formatCurrency(item.productPrice)} × ${item.quantity} = ${formatCurrency(item.productPrice * item.quantity)}</p>
+          <p>Seller: ${item.sellerEmail}</p>
+        </div>`).join("")}
+        <p style="font-size:18px;font-weight:bold">Total: ${formatCurrency(totalPrice)}</p>
+        <p>Track your order in your profile under <strong>Order History</strong>.</p>
+      </div>
+      <div style="background:#f5f5f5;padding:15px;text-align:center;font-size:12px">KhetBazaar - Fresh From Farm</div>
+    </body></html>`;
+
+    await sendMail({ to: buyerEmail, subject: "Order Confirmation - KhetBazaar", html: buyerEmailContent });
 
     if (user) {
-      const orderItemsWithDate = items.map((item) => ({
+      const orderItemsWithDate = items.map(item => ({
+        productId: item.productId,
         productName: item.productName,
         productPrice: item.productPrice,
         quantity: item.quantity,
         totalPrice: item.totalPrice,
         sellerEmail: item.sellerEmail,
+        paymentMethod: paymentMethod || "razorpay",
         orderDate: new Date(),
+        status: "placed",
+        statusHistory: [{ status: "placed", updatedAt: new Date() }],
       }));
 
       user.orders.push(...orderItemsWithDate);
+      user.notifications.push({
+        message: `🎉 Order placed for ${items.length} item(s). Total: ₹${totalPrice}`,
+        type: "order",
+      });
       await user.save();
-    } else {
-      console.log(`User with email ${buyerEmail} not found in database`);
+
+      // Update stock + soldCount
+      const bulkOps = items.map(item => ({
+        updateOne: {
+          filter: { _id: item.productId },
+          update: { $inc: { soldCount: item.quantity, stock: -item.quantity } },
+        },
+      }));
+      await Product.bulkWrite(bulkOps);
     }
 
+    // Notify sellers
     const sellerItems = items.reduce((acc, item) => {
-      if (!acc[item.sellerEmail]) {
-        acc[item.sellerEmail] = [];
-      }
+      if (!acc[item.sellerEmail]) acc[item.sellerEmail] = [];
       acc[item.sellerEmail].push(item);
       return acc;
     }, {});
 
     for (const [sellerEmail, sellerProducts] of Object.entries(sellerItems)) {
-      const sellerTotal = sellerProducts.reduce(
-        (sum, item) => sum + item.productPrice,
-        0
-      );
-
-      const sellerEmailContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            .container { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; }
-            .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
-            .content { padding: 20px; }
-            .order-item { border-bottom: 1px solid #eee; padding: 10px 0; }
-            .total { font-size: 18px; font-weight: bold; margin-top: 20px; }
-            .footer { background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; }
-            .buyer-info { background-color: #e8f5e9; padding: 15px; margin: 20px 0; border-radius: 5px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h2>New Order Received</h2>
-            </div>
-            <div class="content">
-              <p>Dear Seller,</p>
-              <p>You have received a new order from AgriLinker!</p>
-              
-              <div class="buyer-info">
-                <h3>Buyer Information:</h3>
-                <p><strong>Email:</strong> ${buyerEmail}</p>
-              </div>
-
-              <h3>Order Details:</h3>
-              ${sellerProducts
-                .map(
-                  (item) => `
-                <div class="order-item">
-                  <p><strong>Product:</strong> ${item.productName}</p>
-                  <p><strong>Price:</strong> ${formatCurrency(
-                    item.productPrice
-                  )}</p>
-                </div>
-              `
-                )
-                .join("")}
-              
-              <div class="total">
-                <p>Total Amount: ${formatCurrency(sellerTotal)}</p>
-              </div>
-              
-              <p>Please contact the buyer at ${buyerEmail} to arrange delivery.</p>
-            </div>
-            <div class="footer">
-              <p>This is an automated message from AgriLinker. Please do not reply to this email.</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
-
-      await sendMail({
-        to: sellerEmail,
-        subject: "New Order Received - AgriLinker",
-        html: sellerEmailContent,
-      });
+      const sellerTotal = sellerProducts.reduce((sum, item) => sum + item.productPrice * item.quantity, 0);
+      const sellerEmailContent = `<!DOCTYPE html><html><body style="font-family:Arial;max-width:600px;margin:auto">
+        <div style="background:#4CAF50;color:white;padding:20px;text-align:center"><h2>New Order Received 🛒</h2></div>
+        <div style="padding:20px">
+          <p>You have a new order from <strong>${buyerEmail}</strong></p>
+          ${sellerProducts.map(item => `<div style="border-bottom:1px solid #eee;padding:10px 0">
+            <p><strong>${item.productName}</strong> × ${item.quantity}</p>
+            <p>Amount: ${formatCurrency(item.productPrice * item.quantity)}</p>
+          </div>`).join("")}
+          <p style="font-weight:bold">Total: ${formatCurrency(sellerTotal)}</p>
+          <p>Please pack the order and update status in your dashboard.</p>
+        </div>
+      </body></html>`;
+      await sendMail({ to: sellerEmail, subject: "New Order - KhetBazaar", html: sellerEmailContent });
     }
 
     res.status(200).json({
-      message: "Order notifications sent successfully",
-      details: {
-        buyerEmail: buyerEmail,
-        sellerEmails: Object.keys(sellerItems),
-        totalAmount: totalPrice,
-      },
+      message: "Order placed successfully",
+      totalAmount: totalPrice,
+      ...(paymentMethod === "wallet" && user ? { walletBalance: user.walletBalance } : {}),
     });
   } catch (error) {
-    console.error("Error sending order notifications:", error);
-    res.status(500).json({
-      message: "Failed to send order notifications",
-      error: error.message,
-    });
+    console.error("Order error:", error);
+    res.status(500).json({ message: "Failed to place order", error: error.message });
   }
 });
 

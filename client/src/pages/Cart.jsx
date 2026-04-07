@@ -1,42 +1,52 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import axios from "axios";
+import { useLang } from "../context/LanguageContext";
 import { ShoppingCart } from "lucide-react";
-
-const API = import.meta.env.VITE_BACKEND_URL;
 
 const Cart = () => {
   const [cart, setCart] = useState([]);
-  const [error, setError] = useState("");
   const { isAuthenticated } = useAuth();
+  const { t } = useLang();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
+    if (!isAuthenticated) { navigate("/login"); return; }
+    const rawCart = JSON.parse(localStorage.getItem("cart") || "[]");
+    // FIX: Sanitize cart on load — remove items with invalid qty, clamp negatives to 1
+    const sanitized = rawCart
+      .map(item => ({ ...item, quantity: Math.max(1, Math.abs(item.quantity || 1)) }))
+      .filter(item => item._id && item.quantity > 0);
+    setCart(sanitized);
+    localStorage.setItem("cart", JSON.stringify(sanitized));
+  }, [isAuthenticated, navigate]);
+
+  // FIX: updateQty only runs for items that are actually in the cart.
+  // Minimum qty is 1; pressing − at qty=1 prompts removal instead of going negative.
+  const updateQty = (productId, newQty) => {
+    // FIX: Ensure the item is actually in cart before updating
+    const itemInCart = cart.find(item => item._id === productId);
+    if (!itemInCart) return;
+
+    if (newQty < 1) {
+      // Instead of going to 0 or negative, remove the item
+      removeFromCart(productId);
       return;
     }
 
-    const cartData = JSON.parse(localStorage.getItem("cart") || "[]");
-    setCart(cartData);
-  }, [isAuthenticated, navigate]);
-
-  const updateCartItemQuantity = (productId, newQuantity) => {
-    if (newQuantity < 1) return;
-
-    const updatedCart = cart.map((item) =>
-      item._id === productId ? { ...item, quantity: newQuantity } : item
+    const updated = cart.map(item =>
+      item._id === productId
+        ? { ...item, quantity: Math.max(1, newQty) } // never store below 1
+        : item
     );
-
-    setCart(updatedCart);
-    localStorage.setItem("cart", JSON.stringify(updatedCart));
+    setCart(updated);
+    localStorage.setItem("cart", JSON.stringify(updated));
   };
 
   const removeFromCart = (productId) => {
-    const updatedCart = cart.filter((item) => item._id !== productId);
-    setCart(updatedCart);
-    localStorage.setItem("cart", JSON.stringify(updatedCart));
+    const updated = cart.filter(item => item._id !== productId);
+    setCart(updated);
+    localStorage.setItem("cart", JSON.stringify(updated));
   };
 
   const clearCart = () => {
@@ -44,176 +54,90 @@ const Cart = () => {
     localStorage.setItem("cart", JSON.stringify([]));
   };
 
-  const handleBuy = async () => {
-    const buyerEmail = localStorage.getItem("userEmail");
+  // FIX: Use Math.max(0, ...) to ensure totals never go negative
+  const totalItems = cart.reduce((sum, item) => sum + Math.max(0, item.quantity), 0);
+  const totalPrice = cart.reduce((sum, item) => sum + item.price * Math.max(0, item.quantity), 0);
 
-    if (!buyerEmail) {
-      setError("User email not found. Please try logging in again.");
-      return;
-    }
-
-    const invalidItems = cart.filter((item) => !item.sellerEmail);
-    if (invalidItems.length > 0) {
-      setError(
-        "Some products are missing seller information. Please try refreshing or contact support."
-      );
-      console.error("Items missing seller email:", invalidItems);
-      return;
-    }
-
-    try {
-      const orderData = {
-        buyerEmail,
-        items: cart.map((item) => ({
-          productName: item.name,
-          productPrice: item.price,
-          quantity: item.quantity,
-          totalPrice: item.price * item.quantity,
-          sellerEmail: item.sellerEmail,
-        })),
-      };
-
-
-      const response = await axios.post(
-        `${API}/orders`,
-        orderData
-      );
-
-
-      clearCart();
-      navigate("/checkout", { state: { orderData } });
-    } catch (error) {
-      console.error("Error processing order:", error);
-      if (error.response) {
-        console.error("Server error details:", error.response.data);
-        setError(
-          `Failed to process order: ${
-            error.response.data.message || "Unknown error"
-          }`
-        );
-      } else {
-        setError("Failed to process order. Please try again.");
-      }
-    }
-  };
-
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
+  if (cart.length === 0) return (
+    <div className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+        <ShoppingCart className="w-8 h-8" /> Your Cart
+      </h1>
+      <div className="text-center py-16 bg-gray-50 rounded-xl">
+        <ShoppingCart className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+        <p className="text-xl text-gray-500 mb-4">{t("cartEmpty")}</p>
+        <Link to="/shop" className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition">
+          Continue Shopping
+        </Link>
+      </div>
+    </div>
   );
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6 flex items-center">
-        <ShoppingCart className="mr-2" />
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+        <ShoppingCart className="w-8 h-8" />
         Your Cart
-        <span className="ml-2 text-xl font-normal text-gray-600">
-          ({totalItems} {totalItems === 1 ? "item" : "items"})
-        </span>
+        <span className="text-xl font-normal text-gray-500">({totalItems} {totalItems === 1 ? "item" : "items"})</span>
       </h1>
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-
-      {cart.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <ShoppingCart className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-          <h2 className="text-xl font-medium text-gray-600 mb-4">
-            Your cart is empty
-          </h2>
-          <Link
-            to="/shop"
-            className="inline-block bg-green-600 text-white py-2 px-6 rounded-lg hover:bg-green-700"
-          >
-            Continue Shopping
-          </Link>
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="divide-y">
-            {cart.map((item) => (
-              <div key={item._id} className="p-4 flex items-center">
-                <div className="w-20 h-20 flex-shrink-0">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-full h-full object-cover rounded"
-                  />
-                </div>
-                <div className="ml-4 flex-grow">
-                  <Link
-                    to={`/product/${item._id}`}
-                    className="font-medium hover:text-green-600"
-                  >
-                    {item.name}
-                  </Link>
-                  <p className="text-green-600">₹{item.price}</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() =>
-                      updateCartItemQuantity(item._id, item.quantity - 1)
-                    }
-                    className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full"
-                  >
-                    -
-                  </button>
-                  <span className="mx-2">{item.quantity}</span>
-                  <button
-                    onClick={() =>
-                      updateCartItemQuantity(item._id, item.quantity + 1)
-                    }
-                    className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full"
-                  >
-                    +
-                  </button>
-                </div>
-                <div className="ml-6 text-right">
-                  <p className="font-medium">
-                    ₹{(item.price * item.quantity).toFixed(2)}
-                  </p>
-                  <button
-                    onClick={() => removeFromCart(item._id)}
-                    className="text-red-500 text-sm hover:underline"
-                  >
-                    Remove
-                  </button>
-                </div>
+      <div className="bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="divide-y">
+          {cart.map(item => (
+            <div key={item._id} className="p-4 flex items-center gap-4">
+              <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                <img src={item.image} alt={item.name} className="w-full h-full object-cover"
+                  onError={e => e.target.src = "https://via.placeholder.com/80"} />
               </div>
-            ))}
+              <div className="flex-1 min-w-0">
+                <Link to={`/product/${item._id}`} className="font-semibold text-gray-800 hover:text-green-600 block truncate">
+                  {item.name}
+                </Link>
+                <p className="text-green-600 font-medium">₹{item.price} / {item.unit || "kg"}</p>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
+                {/* FIX: − button at qty=1 removes the item; never goes to 0 or negative */}
+                <button
+                  onClick={() => updateQty(item._id, item.quantity - 1)}
+                  className="w-7 h-7 flex items-center justify-center text-lg font-bold text-gray-600 hover:text-red-500"
+                  title={item.quantity === 1 ? "Remove item" : "Decrease quantity"}
+                >
+                  {item.quantity === 1 ? "🗑" : "−"}
+                </button>
+                <span className="w-6 text-center font-semibold">{Math.max(1, item.quantity)}</span>
+                <button
+                  onClick={() => updateQty(item._id, item.quantity + 1)}
+                  className="w-7 h-7 flex items-center justify-center text-lg font-bold text-gray-600 hover:text-green-600"
+                >+</button>
+              </div>
+              <div className="text-right min-w-20">
+                <p className="font-bold text-gray-800">₹{(item.price * Math.max(1, item.quantity)).toFixed(2)}</p>
+                <button onClick={() => removeFromCart(item._id)} className="text-red-500 text-xs hover:underline mt-1">Remove</button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-gray-50 p-6">
+          <div className="flex justify-between mb-2 text-gray-600"><span>{t("subtotal")}</span><span>₹{totalPrice.toFixed(2)}</span></div>
+          <div className="flex justify-between mb-2 text-gray-600"><span>{t("shipping")}</span><span className="text-green-600 font-medium">{t("shippingFree")}</span></div>
+          <div className="flex justify-between font-bold text-lg border-t border-gray-200 pt-4 mt-2">
+            <span>{t("total")}</span><span className="text-green-600">₹{totalPrice.toFixed(2)}</span>
           </div>
 
-          <div className="bg-gray-50 p-6">
-            <div className="flex justify-between mb-2">
-              <span>Subtotal</span>
-              <span>₹{totalPrice.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between mb-2">
-              <span>Shipping</span>
-              <span>Free</span>
-            </div>
-            <div className="flex justify-between font-bold text-lg border-t pt-4 mt-4">
-              <span>Total</span>
-              <span>₹{totalPrice.toFixed(2)}</span>
-            </div>
-
-            <div className="mt-6 flex space-x-4">
-              <button
-                onClick={clearCart}
-                className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-100"
-              >
-                Clear Cart
-              </button>
-              <button
-                onClick={handleBuy}
-                className="flex-grow bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700"
-              >
-                Proceed to Checkout
-              </button>
-            </div>
+          <div className="mt-6 flex gap-3">
+            <button onClick={clearCart} className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-100 transition text-gray-600">
+              Clear Cart
+            </button>
+            <button
+              onClick={() => navigate("/checkout")}
+              className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition font-semibold text-lg"
+            >
+              Proceed to Checkout →
+            </button>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

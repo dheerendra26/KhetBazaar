@@ -9,3 +9,9 @@ BREVO_SENDER_NAME=
 BREVO_SENDER_EMAIL=
 RAZORPAY_KEY_ID=xxxx
 RAZORPAY_KEY_SECRET=xxxx
+
+# ── Mandi / ML module ──────────────────────────────────────────────────────────
+# Flask ML service URL (default: http://localhost:5001)
+FLASK_URL=http://localhost:5001
+# Government data.gov.in API key (public demo key works for testing)
+GOV_API_KEY=579b464db66ec23bdd000001cdd3946e44ce4aad38534209a5a3c9d0
