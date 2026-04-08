@@ -24,10 +24,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+# app = Flask(__name__)
+
+# if __name__ == "__main__":
+#     app.run()
+
 app = Flask(__name__)
 
-if __name__ == "__main__":
-    app.run()
+@app.route("/")
+def home():
+    return "Flask running on Vercel 🚀"
+  
 
 CORS(app)
 
