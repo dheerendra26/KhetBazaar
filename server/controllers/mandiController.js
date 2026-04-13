@@ -1,11 +1,10 @@
 const axios = require("axios");
 const MandiPrice = require("../models/mandiPriceModel");
 
-const GOV_API_BASE =
-  "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
-const GOV_API_KEY = process.env.GOV_API_KEY || "579b464db66ec23bdd000001cdd3946e44ce4aad38534209a5a3c9d0"; // public demo key
+const GOV_API_BASE =process.env.GOV_API_BASE;
+const GOV_API_KEY = process.env.GOV_API_KEY ; 
 
-const FLASK_URL = process.env.FLASK_URL || "http://localhost:5001";
+const FLASK_URL = process.env.FLASK_URL;
 
 // ── Commodity alias map ────────────────────────────────────────────────────────
 // Agmarknet API uses botanical/trade names. This maps display names → API names.

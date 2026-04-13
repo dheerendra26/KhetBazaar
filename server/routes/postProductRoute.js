@@ -196,7 +196,7 @@ router.get("/predict-price", async (req, res) => {
     const { cropName, location } = req.query;
     if (!cropName) return res.status(400).json({ message: "Crop name is required" });
 
-    const FLASK_URL  = process.env.FLASK_URL || "http://localhost:5001";
+    const FLASK_URL  = process.env.FLASK_URL ;
     const MandiPrice = require("../models/mandiPriceModel");
     const axios      = require("axios");
 

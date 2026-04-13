@@ -13,8 +13,8 @@ const cron    = require("node-cron");
 const axios   = require("axios");
 const MandiPrice = require("../models/mandiPriceModel");
 
-const GOV_API_BASE = "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
-const GOV_API_KEY  = process.env.GOV_API_KEY || "579b464db66ec23bdd000001cdd3946e44ce4aad38534209a5a3c9d0";
+const GOV_API_BASE = process.env.GOV_API_BASE ;
+const GOV_API_KEY  = process.env.GOV_API_KEY ;
 
 // Full list of crops to auto-refresh daily
 const CROPS_TO_REFRESH = [
