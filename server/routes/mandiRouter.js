@@ -16,9 +16,22 @@ const {
   getCatalogue,
 } = require("../controllers/marketIntelligenceController");
 
+const { runMandiRefresh } = require("../utils/mandiScheduler");
+
 // ── Mandi raw data ────────────────────────────────────────────────────────────
 router.get("/fetch",  fetchAndStoreMandi);
 router.get("/prices", getMandiPrices);
+
+// ── Manual trigger for scheduled refresh (admin/testing) ──────────────────────
+router.post("/refresh-all", async (req, res) => {
+  try {
+    // Run in background — respond immediately so the HTTP request doesn't time out
+    res.json({ message: "Mandi price refresh started for all crops. Check server logs for progress." });
+    await runMandiRefresh();
+  } catch (err) {
+    console.error("[MandiRouter] refresh-all error:", err.message);
+  }
+});
 
 // ── ML price prediction ───────────────────────────────────────────────────────
 router.post("/predict-price",    predictPrice);

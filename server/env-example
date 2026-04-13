@@ -15,3 +15,9 @@ RAZORPAY_KEY_SECRET=xxxx
 FLASK_URL=http://localhost:5001
 # Government data.gov.in API key (public demo key works for testing)
 GOV_API_KEY=579b464db66ec23bdd000001cdd3946e44ce4aad38534209a5a3c9d0
+
+# ── Google Cloud Translation API ───────────────────────────────────────────────
+# Get your key: https://console.cloud.google.com/apis/credentials
+# Enable "Cloud Translation API" in your GCP project first.
+# Leave blank to use free MyMemory fallback.
+GOOGLE_TRANSLATE_API_KEY=

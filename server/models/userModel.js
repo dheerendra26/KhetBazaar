@@ -7,11 +7,12 @@ const orderItemSchema = new mongoose.Schema({
   quantity: Number,
   totalPrice: Number,
   sellerEmail: String,
+  buyerEmail: String,
   paymentMethod: { type: String, default: "razorpay" },
   orderDate: { type: Date, default: Date.now },
   status: {
     type: String,
-    enum: ["placed", "packed", "out_for_delivery", "delivered"],
+    enum: ["placed", "packed", "out_for_delivery", "delivered", "cancelled"],
     default: "placed",
   },
   statusHistory: [
@@ -35,10 +36,13 @@ const userSchema = mongoose.Schema({
   contact: String,
   address: String,
   otp: String,
-  role: { type: Number, enum: [1, 2, 3] },
+  role: { type: Number, enum: [1, 2, 3, 4] }, // 1=customer, 2=farmer, 3=both, 4=admin
   orders: [orderItemSchema],
   notifications: [notificationSchema],
   walletBalance: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: true },
+  deactivatedAt: { type: Date, default: null },
+  deactivatedBy: { type: String, default: null }, // admin email
 });
 
 module.exports = mongoose.model("user", userSchema);

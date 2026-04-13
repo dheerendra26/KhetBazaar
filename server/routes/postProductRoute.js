@@ -8,19 +8,47 @@ const {
   sendListingDeletionEmail,
 } = require("../utils/sendEmail");
 
+const { resolveCategory, getAllSynonyms } = require("../utils/categoryMapper");
+
+/* ── RESOLVE CATEGORY (live lookup for the Upload form) ── */
+router.get("/resolve-category", (req, res) => {
+  const { name } = req.query;
+  if (!name) return res.status(400).json({ message: "name query param is required" });
+  const result = resolveCategory(name);
+  res.json(result); // { canonical, category, confidence }
+});
+
+/* ── SYNONYM DICTIONARY (used by client for autocomplete hints) ── */
+router.get("/category-synonyms", (req, res) => {
+  res.json(getAllSynonyms());
+});
+
 /* ── POST PRODUCT ── */
 router.post("/post", async (req, res) => {
   try {
     const { name, description, price, marketPrice, email, location, images, lat, lng, unit, category, isOrganic, isVerified, stock } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ message: "Product name is required" });
     if (!images || images.length === 0) return res.status(400).json({ message: "At least one image is required" });
 
+    // ── Smart category resolution ─────────────────────────────────────────
+    // If the client sent a category, honour it.  Otherwise (or as a safety
+    // net if the client sent "vegetable" as a blind default), resolve from
+    // the product name so synonyms like "Aloo" → "vegetable",
+    // "Doodh" → "dairy", "Gehun" → "seeds" are all handled automatically.
+    const resolved = resolveCategory(name);
+    const finalCategory = (category && category !== "vegetable")
+      ? category                 // client explicitly picked a non-default category
+      : resolved.category;       // use name-derived category (covers default "vegetable" too when name resolves better)
+
     const product = await productsModel.create({
-      name, description, price,
+      name: resolved.confidence !== "default" ? resolved.canonical : name.trim(),
+      description, price,
       originalPrice: price,
       marketPrice: marketPrice ? Number(marketPrice) : undefined,
       email, location, images, lat, lng,
       stock: Math.max(0, stock || 10),
-      unit, category,
+      unit,
+      category: finalCategory,
       isOrganic: !!isOrganic,
       isVerified: !!isVerified,
     });
@@ -42,13 +70,49 @@ router.post("/post", async (req, res) => {
   }
 });
 
-/* ── DELETE PRODUCT ── */
+/* ── DEACTIVATE PRODUCT (soft delete) ── */
 router.delete("/delete/:id", async (req, res) => {
   try {
-    const product = await productsModel.findByIdAndDelete(req.params.id);
+    const { adminEmail } = req.body;
+    const product = await productsModel.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
+    if (!product.isActive) return res.status(400).json({ message: "Product already deactivated" });
+
+    // Feature 3: products with sales are ALWAYS soft-deleted, never hard-deleted,
+    // to preserve order history, analytics, and auditing integrity.
+    const hasSales = (product.soldCount || 0) > 0;
+
+    product.isActive = false;
+    product.deactivatedAt = new Date();
+    product.deactivatedBy = adminEmail || product.email;
+    await product.save();
+
     await sendListingDeletionEmail(product.email, product);
-    res.status(200).json({ message: "Product deleted successfully" });
+    res.status(200).json({
+      message: "Product deactivated successfully",
+      hasSales,
+      soldCount: product.soldCount || 0,
+      note: hasSales
+        ? "Product had existing sales and has been deactivated. It is hidden from all listings but preserved in order history."
+        : "Product had no sales and has been deactivated and removed from all listings.",
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+/* ── PRODUCT SALES CHECK (pre-flight before delete modal) ── */
+router.get("/sales-check/:id", async (req, res) => {
+  try {
+    const product = await productsModel.findById(req.params.id).select("name soldCount isActive");
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    res.status(200).json({
+      productId: req.params.id,
+      name: product.name,
+      soldCount: product.soldCount || 0,
+      hasSales: (product.soldCount || 0) > 0,
+      isActive: product.isActive,
+    });
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
   }
@@ -68,15 +132,17 @@ router.put("/edit/:id", async (req, res) => {
     if (marketPrice !== undefined) updatedFields.marketPrice = Number(marketPrice);
     if (price !== undefined) {
       updatedFields.price = Number(price);
-      updatedFields.originalPrice = product.originalPrice || Number(price);
+      updatedFields.originalPrice = Number(price);
     }
     if (images !== undefined && images.length > 0) updatedFields.images = images;
     if (stock !== undefined) updatedFields.stock = Math.max(0, Number(stock));
     if (discountPercent !== undefined) {
       const disc = Math.max(0, Math.min(90, Number(discountPercent)));
       updatedFields.discountPercent = disc;
-      const base = product.originalPrice || product.price;
-      updatedFields.price = Math.round(base * (1 - disc / 100));
+      // Use the newly submitted price as base if provided, otherwise use stored originalPrice
+      const base = price !== undefined ? Number(price) : (product.originalPrice || product.price);
+      if (price !== undefined) updatedFields.originalPrice = Number(price);
+      updatedFields.price = disc > 0 ? Math.round(base * (1 - disc / 100)) : base;
       // Notify customers about price drop
       if (disc > 0) {
         try {
@@ -100,7 +166,7 @@ router.put("/edit/:id", async (req, res) => {
 /* ── MY PRODUCTS ── */
 router.get("/my-products/:email", async (req, res) => {
   try {
-    const products = await productsModel.find({ email: req.params.email });
+    const products = await productsModel.find({ email: req.params.email, isActive: { $ne: false } });
     res.status(200).json(products);
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
@@ -130,38 +196,83 @@ router.get("/predict-price", async (req, res) => {
     const { cropName, location } = req.query;
     if (!cropName) return res.status(400).json({ message: "Crop name is required" });
 
-    const FLASK_URL  = process.env.FLASK_URL;
+    const FLASK_URL  = process.env.FLASK_URL || "http://localhost:5001";
     const MandiPrice = require("../models/mandiPriceModel");
     const axios      = require("axios");
 
-    const crop = cropName.toLowerCase().trim();
+    // ── Step 1: Resolve synonym → canonical English name ─────────────────────
+    // e.g. "aloo" → "Potato", "tamatar" → "Tomato", "doodh" → "Milk"
+    // This is the core fix: before this, "aloo" was sent directly to the DB
+    // and basePrices lookup, where it matched nothing and fell to default: 35.
+    const { resolveCategory } = require("../utils/categoryMapper");
+    const resolved    = resolveCategory(cropName.trim());
+    // Use canonical English name for all lookups; fall back to raw input only
+    // if no synonym was found (confidence === "default")
+    const canonicalEN = resolved.confidence !== "default"
+      ? resolved.canonical.toLowerCase()   // e.g. "potato", "tomato", "milk"
+      : cropName.toLowerCase().trim();
 
-    // ── Commodity alias map (same as marketIntelligenceController) ────────────
+    // The "crop" variable used for Flask ML calls uses the canonical name so
+    // the ML model (trained on English names) can match it correctly.
+    const crop = canonicalEN;
+
+    // ── Commodity alias map (Agmarknet API names) ─────────────────────────────
     const CROP_ALIASES = {
-      "arhar dal":  ["arhar(tur/red gram)(whole)", "tur", "arhar dal", "pigeon pea"],
-      "chana dal":  ["bengal gram(split)", "gram(split)", "chana dal", "bengal gram(whole)", "gram"],
-      "masoor dal": ["lentil", "masur(whole)", "masoor dal", "masur dal"],
-      "urad dal":   ["black gram(urd beans)(whole)", "urad(whole)", "urad dal", "black gram"],
-      "moong dal":  ["green gram(whole)", "moong(whole)", "moong dal", "green gram"],
-      "soybean":    ["soybean", "soya bean", "soyabean"],
-      "groundnut":  ["groundnut", "groundnut (with shell)", "groundnut(without shell)"],
-      "mustard":    ["mustard", "mustard seeds(black)", "rapeseed"],
-      "bajra":      ["bajra", "pearl millet", "bajra(pearl millet/cumbu)"],
+      "arhar dal":      ["arhar(tur/red gram)(whole)", "tur", "arhar dal", "pigeon pea"],
+      "chana dal":      ["bengal gram(split)", "gram(split)", "chana dal", "bengal gram(whole)", "gram"],
+      "masoor dal":     ["lentil", "masur(whole)", "masoor dal", "masur dal"],
+      "lentils":        ["lentil", "masur(whole)", "masoor dal", "masur dal"],
+      "urad dal":       ["black gram(urd beans)(whole)", "urad(whole)", "urad dal", "black gram"],
+      "moong dal":      ["green gram(whole)", "moong(whole)", "moong dal", "green gram"],
+      "soybean":        ["soybean", "soya bean", "soyabean"],
+      "groundnut":      ["groundnut", "groundnut (with shell)", "groundnut(without shell)"],
+      "mustard seeds":  ["mustard", "mustard seeds(black)", "rapeseed"],
+      "mustard":        ["mustard", "mustard seeds(black)", "rapeseed"],
+      "bajra":          ["bajra", "pearl millet", "bajra(pearl millet/cumbu)"],
+      "ladyfinger":     ["ladyfinger", "bhindi(ladies finger)", "okra"],
+      "brinjal":        ["brinjal", "brinjal(vankaya)"],
+      "pomegranate":    ["pomegranate", "anar"],
+      "green chilli":   ["green chilli", "chilli", "chilly"],
+      "bottle gourd":   ["bottle gourd", "lauki", "ghiya"],
+      "bitter gourd":   ["bitter gourd", "karela"],
+      "sweet corn":     ["maize", "corn", "sweet corn"],
+      "maize":          ["maize", "corn"],
     };
+
+    // Build DB commodity filter: try canonical + all its API aliases
     const cropAliasesLower = [crop, ...(CROP_ALIASES[crop] || [])].map(a => a.toLowerCase());
     const cropFilter = cropAliasesLower.length === 1
       ? cropAliasesLower[0]
       : { $in: cropAliasesLower };
 
-    // ── Static baseline (per kg) ─────────────────────────────────────────────
-    // Used only as last resort — no random variance, deterministic.
+    // ── Static baseline (per kg) — covers ALL crops in the synonym dictionary ─
+    // Used only when Flask ML and DB both have no data.
+    // Keys are the canonical lowercase English names from categoryMapper.
     const basePrices = {
-      wheat: 22, rice: 32, tomato: 25, onion: 20, potato: 18,
-      carrot: 30, spinach: 20, cauliflower: 25, cabbage: 15, brinjal: 22,
-      mango: 60, banana: 35, apple: 120, grapes: 80, orange: 50,
-      milk: 55, curd: 45, butter: 500, ghee: 600,
-      mustard: 65, soybean: 40, corn: 20, cotton: 65, sugarcane: 3,
-      lentils: 90, chickpea: 75, peas: 45, groundnut: 70, default: 35,
+      // Vegetables
+      potato: 18,       tomato: 25,       onion: 20,        garlic: 120,
+      ginger: 60,       cauliflower: 25,  cabbage: 15,      carrot: 30,
+      spinach: 20,      brinjal: 22,      ladyfinger: 35,   peas: 45,
+      capsicum: 40,     "green chilli": 30, cucumber: 20,   pumpkin: 18,
+      "bottle gourd": 20, "bitter gourd": 30, radish: 15,   beetroot: 25,
+      "sweet corn": 20, coriander: 40,    fenugreek: 30,    mushroom: 80,
+      // Fruits
+      mango: 60,        banana: 35,       apple: 120,       grapes: 80,
+      orange: 50,       papaya: 25,       watermelon: 15,   guava: 35,
+      pomegranate: 90,  lemon: 40,        pineapple: 45,    coconut: 30,
+      litchi: 70,       plum: 60,         jackfruit: 20,    "custard apple": 50,
+      // Dairy
+      milk: 55,         curd: 45,         butter: 500,      ghee: 600,
+      paneer: 300,      cheese: 400,      buttermilk: 25,   cream: 200,
+      khoya: 250,
+      // Seeds / Grains / Pulses
+      wheat: 22,        rice: 32,         "mustard seeds": 65, mustard: 65,
+      soybean: 40,      groundnut: 70,    lentils: 90,      chickpea: 75,
+      "moong dal": 90,  "urad dal": 95,   "arhar dal": 100, bajra: 18,
+      jowar: 20,        maize: 20,        sesame: 110,      "sunflower seeds": 55,
+      cotton: 65,       sugarcane: 3,
+      // fallback
+      default: 35,
     };
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -302,7 +413,7 @@ router.get("/predict-price", async (req, res) => {
 
     // ── Attempt 3: static baseline (last resort) ──────────────────────────────
     if (todayPrice == null) {
-      const base    = basePrices[crop] || basePrices.default;
+      const base    = basePrices[canonicalEN] || basePrices[crop] || basePrices.default;
       // Baseline already incorporates seasonal + location — mark flag so we
       // don't re-apply location premium below.
       todayPrice               = Math.round(base * seasonal  * locationFactor);
@@ -323,7 +434,7 @@ router.get("/predict-price", async (req, res) => {
     }
 
     // Final NaN guard — should never trigger, but belt-and-suspenders
-    if (!Number.isFinite(todayPrice)    || todayPrice    <= 0) todayPrice    = basePrices[crop] || basePrices.default;
+    if (!Number.isFinite(todayPrice)    || todayPrice    <= 0) todayPrice    = basePrices[canonicalEN] || basePrices[crop] || basePrices.default;
     if (!Number.isFinite(tomorrowPrice) || tomorrowPrice <= 0) tomorrowPrice = todayPrice;
 
     // ── Build range: today avg ± 12%, tomorrow avg ± 10% ─────────────────────
@@ -341,7 +452,7 @@ router.get("/predict-price", async (req, res) => {
                       : "➡️ Stable";
 
     // ── Recommendation ────────────────────────────────────────────────────────
-    const baseForCompare  = basePrices[crop] || basePrices.default;
+    const baseForCompare  = basePrices[canonicalEN] || basePrices[crop] || basePrices.default;
     const recommendation  = avgPrice > baseForCompare * 1.05
       ? "✅ Good time to sell — prices are above average"
       : avgPrice < baseForCompare * 0.95
@@ -357,7 +468,8 @@ router.get("/predict-price", async (req, res) => {
     };
 
     return res.status(200).json({
-      cropName,
+      cropName: resolved.confidence !== "default" ? resolved.canonical : cropName,
+      inputName: cropName,   // original input, for reference
       location:       location || "General",
       predictedRange: { min: minPrice, max: maxPrice, avg: avgPrice },
       tomorrow:       { min: tomorrowMin, max: tomorrowMax, avg: tomorrowPrice },
@@ -439,6 +551,7 @@ router.put("/buy/:id", async (req, res) => {
     const { quantity } = req.body;
     const product = await productsModel.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
+    if (!product.isActive) return res.status(400).json({ message: "Product is no longer available" });
     if (product.stock < quantity) return res.status(400).json({ message: "Not enough stock" });
     product.stock -= quantity;
     product.soldCount += quantity;

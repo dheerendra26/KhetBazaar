@@ -112,6 +112,10 @@ module.exports.loginUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    if (!user.isActive) {
+      return res.status(403).json({ message: "Account has been deactivated. Please contact admin." });
+    }
+
     if (!user.otp) {
       return res.status(401).json({ message: "OTP expired or not found. Please request a new OTP." });
     }

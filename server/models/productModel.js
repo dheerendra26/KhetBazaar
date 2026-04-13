@@ -40,6 +40,9 @@ const productSchema = mongoose.Schema({
       createdAt: { type: Date, default: Date.now },
     },
   ],
+  isActive: { type: Boolean, default: true },
+  deactivatedAt: { type: Date, default: null },
+  deactivatedBy: { type: String, default: null }, // admin email
 });
 
 module.exports = mongoose.model("product", productSchema);

@@ -18,10 +18,10 @@ if (process.env.NODE_ENV !== "production") {
 const mongoose = require("mongoose");
 const axios    = require("axios");
 
-const MONGO_URI   = process.env.MONGO_URI ;
-const FLASK_URL   = process.env.FLASK_URL ;
-const GOV_API_KEY = process.env.GOV_API_KEY ;
-const GOV_API_BASE = process.env.GOV_API_BASE;
+const MONGO_URI   = process.env.MONGO_URI   || "mongodb+srv://sawanisaxena_db_user:8ezx7RmypsjwZIyn@cluster0.wtnvv3i.mongodb.net/test";
+const FLASK_URL   = process.env.FLASK_URL   || "http://localhost:5001";
+const GOV_API_KEY = process.env.GOV_API_KEY || "579b464db66ec23bdd0000015c8aa5d6fcd349ab644211178c18504c";
+const GOV_API_BASE = "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
 
 const MandiPrice = require("./models/mandiPriceModel");
 const DairyPrice = require("./models/dairyPriceModel");

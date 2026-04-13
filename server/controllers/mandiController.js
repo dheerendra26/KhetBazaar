@@ -1,13 +1,11 @@
-if (process.env.NODE_ENV !== "production") {
-  require("dotenv").config();
-}
-
 const axios = require("axios");
 const MandiPrice = require("../models/mandiPriceModel");
 
-const GOV_API_BASE = process.env.GOV_API_BASE;
-const GOV_API_KEY = process.env.GOV_API_KEY;
-const FLASK_URL = process.env.FLASK_URL;
+const GOV_API_BASE =
+  "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
+const GOV_API_KEY = process.env.GOV_API_KEY || "579b464db66ec23bdd000001cdd3946e44ce4aad38534209a5a3c9d0"; // public demo key
+
+const FLASK_URL = process.env.FLASK_URL || "http://localhost:5001";
 
 // ── Commodity alias map ────────────────────────────────────────────────────────
 // Agmarknet API uses botanical/trade names. This maps display names → API names.
@@ -80,9 +78,19 @@ function parseArrivalDate(dateStr) {
   };
 }
 
-/** Normalise commodity names */
+/** Normalise commodity names using the synonym mapper so "Aloo" → "potato",
+ *  "Tamatar" → "tomato", "Bhindi" → "ladyfinger", etc.
+ *  Falls back to plain lowercase if no match found.
+ */
+const { resolveCategory: _resolveCategory } = require("../utils/categoryMapper");
 function normaliseCrop(name) {
-  return (name || "").trim().toLowerCase();
+  if (!name) return "";
+  const resolved = _resolveCategory(name.trim());
+  // Use canonical name (lowercased) when we have a confident match
+  if (resolved.confidence !== "default") {
+    return resolved.canonical.toLowerCase();
+  }
+  return name.trim().toLowerCase();
 }
 
 // ── Profit comparison using farmer's OWN listed product prices ────────────────
@@ -91,6 +99,96 @@ function normaliseCrop(name) {
 //   mandi_price         = latest modal price from DB for that crop (middleman route)
 //   If no mandi record exists, we fall back to farmer_price * 0.70 as mandi estimate
 
+// ── Static baseline prices (per kg) — mirrors postProductRoute basePrices ──────
+// Used as last resort when DB and ML both have no data for a crop.
+const BASELINE_PRICES = {
+  potato: 18,    tomato: 25,    onion: 20,     garlic: 120,   ginger: 60,
+  cauliflower: 25, cabbage: 15, carrot: 30,    spinach: 20,   brinjal: 22,
+  ladyfinger: 35,  peas: 45,    capsicum: 40,  "green chilli": 30,
+  cucumber: 20,  pumpkin: 18,   "bottle gourd": 20, "bitter gourd": 30,
+  radish: 15,    beetroot: 25,  "sweet corn": 20, coriander: 40,
+  fenugreek: 30, mushroom: 80,
+  mango: 60,     banana: 35,    apple: 120,    grapes: 80,    orange: 50,
+  papaya: 25,    watermelon: 15, guava: 35,    pomegranate: 90, lemon: 40,
+  pineapple: 45, coconut: 30,   litchi: 70,    plum: 60,      jackfruit: 20,
+  milk: 55,      curd: 45,      butter: 500,   ghee: 600,     paneer: 300,
+  cheese: 400,   buttermilk: 25, cream: 200,   khoya: 250,
+  wheat: 22,     rice: 32,      "mustard seeds": 65, mustard: 65,
+  soybean: 40,   groundnut: 70, lentils: 90,   chickpea: 75,
+  "moong dal": 90, "urad dal": 95, "arhar dal": 100, bajra: 18,
+  jowar: 20,     maize: 20,     sesame: 110,   cotton: 65,    sugarcane: 3,
+  default: 30,
+};
+
+/**
+ * Fetch the real mandi modal price (per kg) for a single crop.
+ *
+ * Strategy (cheapest → most expensive, bail out as soon as we have a value):
+ *   1. DB: most-recent MandiPrice record for the canonical crop name + all its
+ *      commodity aliases — gives the actual government mandi modal price.
+ *   2. Flask ML: /predict endpoint — trained on historical government data.
+ *   3. Static baseline table — deterministic, no variance, labelled clearly.
+ *
+ * Returns { pricePerKg, source, estimated }
+ */
+async function fetchMandiPriceForCrop(cropName) {
+  const canonicalKey = normaliseCrop(cropName);  // e.g. "potato", "green chilli"
+
+  // All DB aliases (canonical + commodity trade names used in Agmarknet data)
+  const aliasesLower = getAllAliasesLower(canonicalKey);
+  const dbFilter     = aliasesLower.length === 1
+    ? aliasesLower[0]
+    : { $in: aliasesLower };
+
+  // ── 1. DB lookup ────────────────────────────────────────────────────────────
+  try {
+    const pipeline = [
+      { $match: { commodity: dbFilter, modal_price: { $gt: 0 } } },
+      {
+        $group: {
+          _id:       "$arrival_date",
+          avg_price: { $avg: "$modal_price" },
+          year:  { $max: "$year" },
+          month: { $max: "$month" },
+          day:   { $max: "$day" },
+        },
+      },
+      { $sort: { year: -1, month: -1, day: -1 } },
+      { $limit: 3 },
+    ];
+    const records = await MandiPrice.aggregate(pipeline);
+    const valid   = records.filter(r => r.avg_price > 0);
+    if (valid.length > 0) {
+      // modal_price in DB is per quintal → divide by 100 for per-kg
+      const pricePerKg = +(valid[0].avg_price / 100).toFixed(2);
+      return { pricePerKg, source: "mandi_db", estimated: false };
+    }
+  } catch { /* DB error — fall through */ }
+
+  // ── 2. Flask ML ─────────────────────────────────────────────────────────────
+  try {
+    const now = new Date();
+    const flaskRes = await axios.post(
+      `${FLASK_URL}/predict`,
+      { crop: canonicalKey, day: now.getDate(), month: now.getMonth() + 1, year: now.getFullYear() },
+      { timeout: 5000 }
+    );
+    const raw = flaskRes.data?.predicted_price;
+    if (raw && Number.isFinite(Number(raw)) && Number(raw) > 0) {
+      const pricePerKg = +(Number(raw) / 100).toFixed(2); // quintal → kg
+      return { pricePerKg, source: "ml_predicted", estimated: true };
+    }
+  } catch { /* Flask unreachable or crop unknown */ }
+
+  // ── 3. Static baseline ──────────────────────────────────────────────────────
+  const base = BASELINE_PRICES[canonicalKey] || BASELINE_PRICES.default;
+  // Apply simple seasonal multiplier
+  const month    = new Date().getMonth();
+  const seasonal = [1.1,1.15,1.1,1.05,1.0,0.95,0.9,0.85,0.9,1.0,1.05,1.1][month];
+  const pricePerKg = +(base * seasonal).toFixed(2);
+  return { pricePerKg, source: "baseline", estimated: true };
+}
+
 exports.productProfitComparison = async (req, res) => {
   try {
     const { email } = req.query;
@@ -98,9 +196,8 @@ exports.productProfitComparison = async (req, res) => {
 
     const Product = require("../models/productModel");
 
-    // Get all products listed by this farmer
-    const products = await Product.find({ email }).select(
-      "name price marketPrice unit stock soldCount category"
+    const products = await Product.find({ email, isActive: { $ne: false } }).select(
+      "name price unit stock soldCount category"
     );
 
     if (!products.length) {
@@ -109,88 +206,76 @@ exports.productProfitComparison = async (req, res) => {
 
     const results = await Promise.all(
       products.map(async (p) => {
-        const farmerPrice = p.price; // what farmer charges on KhetBazaar per unit
+        const farmerPrice = p.price; // ₹ per unit the farmer charges on KhetBazaar
 
-        // Try to find latest mandi modal price for this crop
-        let mandiPrice = p.marketPrice || null;
-        if (!mandiPrice) {
-          const cropKey = normaliseCrop(p.name);
-          const mandiRecord = await MandiPrice.findOne(
-            { commodity: cropKey },
-            {},
-            { sort: { year: -1, month: -1, day: -1 } }
-          );
-          // mandiRecord.modal_price is per quintal (100kg), convert to per unit
-          if (mandiRecord) {
-            mandiPrice = mandiRecord.modal_price / 100; // per kg
-          }
-        }
+        // ── Fetch real mandi price for THIS specific product ────────────────
+        const { pricePerKg, source, estimated } = await fetchMandiPriceForCrop(p.name);
 
-        // Fallback: if no mandi data at all, estimate mandi = 70% of farmer price
-        // (farmer's KhetBazaar price already reflects the "no middleman" advantage)
-        const mandiEstimated = !mandiPrice;
-        if (!mandiPrice) {
-          mandiPrice = farmerPrice * FARMER_RECEIVES_PCT;
-        }
+        // Adjust for non-kg units (per-litre ≈ per-kg for liquids; per-piece needs
+        // weight estimate — we keep it as-is since most products are sold by kg)
+        const mandiPrice = pricePerKg;
 
-        // What farmer would receive selling via mandi (after all deductions)
-        const mandiEarningsPerUnit  = mandiPrice * FARMER_RECEIVES_PCT;
-        // What farmer earns on KhetBazaar (their listed price, no deductions)
+        // What farmer would receive after typical mandi deductions (~30%)
+        const mandiEarningsPerUnit  = +(mandiPrice * FARMER_RECEIVES_PCT).toFixed(2);
+        // What farmer earns on KhetBazaar (their listed price, zero deductions)
         const directEarningsPerUnit = farmerPrice;
 
-        const gainPerUnit  = +(directEarningsPerUnit - mandiEarningsPerUnit).toFixed(2);
-        const gainPct      = +(( gainPerUnit / mandiEarningsPerUnit ) * 100).toFixed(1);
+        // Guard against zero to avoid NaN/Infinity in percentage
+        const safeMandiEarnings = mandiEarningsPerUnit > 0 ? mandiEarningsPerUnit : 1;
 
-        // Projected over stock qty
-        const qty = p.stock || 1;
-        const projectedMandiEarnings   = +(mandiEarningsPerUnit  * qty).toFixed(2);
-        const projectedDirectEarnings  = +(directEarningsPerUnit * qty).toFixed(2);
-        const projectedGain            = +(projectedDirectEarnings - projectedMandiEarnings).toFixed(2);
+        const gainPerUnit = +(directEarningsPerUnit - mandiEarningsPerUnit).toFixed(2);
+        // gain_pct = how much MORE % the farmer earns vs mandi route
+        const gainPct     = +(( gainPerUnit / safeMandiEarnings ) * 100).toFixed(1);
+
+        // Progress bar: mandi bar as % of KhetBazaar price (capped at 99% so bar
+        // never overflows — and 0% floor so it always shows something)
+        const barPct = Math.min(99, Math.max(5,
+          Math.round((mandiEarningsPerUnit / Math.max(directEarningsPerUnit, 1)) * 100)
+        ));
+
+        const qty                    = p.stock || 1;
+        const projectedMandiEarnings = +(mandiEarningsPerUnit * qty).toFixed(2);
+        const projectedDirectEarnings= +(directEarningsPerUnit * qty).toFixed(2);
+        const projectedGain          = +(projectedDirectEarnings - projectedMandiEarnings).toFixed(2);
 
         return {
-          product_id:   p._id,
-          product_name: p.name,
-          category:     p.category,
-          unit:         p.unit || "kg",
-          stock:        qty,
-          sold_count:   p.soldCount || 0,
-
-          // Prices per unit
+          product_id:            p._id,
+          product_name:          p.name,
+          category:              p.category,
+          unit:                  p.unit || "kg",
+          stock:                 qty,
+          sold_count:            p.soldCount || 0,
           your_khetbazaar_price: farmerPrice,
-          mandi_modal_price:     +mandiPrice.toFixed(2),
-          mandi_estimated:       mandiEstimated,
-
-          // Per unit earnings
+          mandi_modal_price:     mandiPrice,
+          mandi_source:          source,        // "mandi_db" | "ml_predicted" | "baseline"
+          mandi_estimated:       estimated,
+          bar_pct:               barPct,        // pre-computed for frontend
           per_unit: {
-            via_mandi:   +mandiEarningsPerUnit.toFixed(2),
+            via_mandi:     mandiEarningsPerUnit,
             on_khetbazaar: directEarningsPerUnit,
-            gain:        gainPerUnit,
-            gain_pct:    gainPct,
+            gain:          gainPerUnit,
+            gain_pct:      gainPct,
           },
-
-          // Projected over current stock
           projected: {
-            quantity:        qty,
-            via_mandi:       projectedMandiEarnings,
-            on_khetbazaar:   projectedDirectEarnings,
-            extra_earned:    projectedGain,
+            quantity:     qty,
+            via_mandi:    projectedMandiEarnings,
+            on_khetbazaar: projectedDirectEarnings,
+            extra_earned: projectedGain,
           },
-
-          // note: mandiEstimated
-          //   ? "Mandi price estimated (no DB record found) — add this crop via /mandi/fetch for accurate data"
-          //   : "Mandi price from government data.gov.in records",
+          note: estimated
+            ? `Mandi price estimated from ${source === "ml_predicted" ? "ML model" : "baseline seasonal data"} — live data pending`
+            : "Mandi price from government data.gov.in records",
         };
       })
     );
 
-    // Sort by projected gain descending
     results.sort((a, b) => b.projected.extra_earned - a.projected.extra_earned);
 
     const totalExtraEarned = +results.reduce((s, r) => s + r.projected.extra_earned, 0).toFixed(2);
 
     return res.json({
       email,
-      total_products: results.length,
+      total_products:              results.length,
       total_extra_earned_vs_mandi: totalExtraEarned,
       message: `By selling on KhetBazaar you earn ₹${totalExtraEarned.toLocaleString("en-IN")} more than going through a mandi middleman`,
       products: results,

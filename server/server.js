@@ -14,6 +14,9 @@ const productRouter = require("./routes/postProductRoute");
 const razorPayRouter = require("./routes/razorPayRoute");
 const mandiRouter    = require("./routes/mandiRouter");
 const walletRouter   = require("./routes/walletRouter");
+const adminRouter    = require("./routes/adminRouter");
+const { startMandiScheduler } = require("./utils/mandiScheduler");
+const translateRouter         = require("./routes/translateRouter");
 
 const PORT = process.env.PORT || 3000;
 const corsOptions = {
@@ -22,7 +25,6 @@ const corsOptions = {
     "http://localhost:3000",
     "http://localhost:5174",
     "https://khetbazaar.netlify.app",
-    "https://farmersconnnect.netlify.app",
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -41,6 +43,8 @@ app.use("/orders", order);
 app.use("/payments/razorpay", razorPayRouter);
 app.use("/mandi", mandiRouter);
 app.use("/wallet", walletRouter);
+app.use("/admin", adminRouter);
+app.use("/api", translateRouter);
 
 app.get("/api/wake-up", (req, res) => {
   res.status(200).send("Backend awake and running!");
@@ -48,4 +52,5 @@ app.get("/api/wake-up", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`server is running on port: ${PORT}`);
+  startMandiScheduler();
 });

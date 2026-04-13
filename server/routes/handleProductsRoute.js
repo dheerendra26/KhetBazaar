@@ -64,6 +64,7 @@ router.post("/", async (req, res) => {
         quantity: item.quantity,
         totalPrice: item.totalPrice,
         sellerEmail: item.sellerEmail,
+        buyerEmail: buyerEmail,
         paymentMethod: paymentMethod || "razorpay",
         orderDate: new Date(),
         status: "placed",

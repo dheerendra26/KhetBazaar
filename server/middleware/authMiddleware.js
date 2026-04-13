@@ -24,6 +24,10 @@ module.exports.authenticateUser = async function (req, res, next) {
       return res.status(401).json({ message: "User not found" });
     }
 
+    if (!user.isActive) {
+      return res.status(403).json({ message: "Account has been deactivated. Contact admin." });
+    }
+
     req.user = user;
     next();
   } catch (err) {
