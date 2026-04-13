@@ -160,8 +160,8 @@ const DeleteProduct = () => {
                     {/* Thumbnail */}
                     <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
                       <img
-                        src={product.images?.[0] || "https://via.placeholder.com/100"}
-                        onError={e => (e.target.src = "https://via.placeholder.com/100")}
+                        src={product.images?.[0] || ""}
+                        onError={e => (e.target.src = "")}
                         className="w-full h-full object-cover"
                         alt={product.name}
                       />

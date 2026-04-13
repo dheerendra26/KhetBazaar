@@ -451,7 +451,7 @@ const CheckoutPage = () => {
             {cart.map((item, i) => (
               <div key={i} className="flex items-center gap-3">
                 <img
-                  src={item.image || "https://via.placeholder.com/50"}
+                  src={item.image || ""}
                   className="w-12 h-12 rounded-lg object-cover"
                   alt=""
                 />

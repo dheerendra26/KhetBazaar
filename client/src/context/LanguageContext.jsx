@@ -163,7 +163,6 @@ export const translations = {
     myProfile: "My Profile", loadingProfile: "Loading your profile...",
     totalOrdersStat: "Total Orders", totalSpent: "Total Spent", walletBalance: "Wallet Balance",
     viewAll: "View All →", noOrdersProfile: "No orders yet",
-    startShopping: "Start shopping to see your orders here",
 
     // ── MANDI ──
     mandiTitle: "📊 Real Market Price Intelligence",
@@ -355,7 +354,6 @@ export const translations = {
     myProfile: "मेरी प्रोफ़ाइल", loadingProfile: "प्रोफ़ाइल लोड हो रही है...",
     totalOrdersStat: "कुल ऑर्डर", totalSpent: "कुल खर्च", walletBalance: "वॉलेट बैलेंस",
     viewAll: "सभी देखें →", noOrdersProfile: "अभी तक कोई ऑर्डर नहीं",
-    startShopping: "खरीदारी शुरू करें",
 
     // ── MANDI ──
     mandiTitle: "📊 असली बाजार भाव जानकारी",

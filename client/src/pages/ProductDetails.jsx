@@ -224,7 +224,7 @@ const ProductDetail = () => {
 
   const images = product.images?.length
     ? product.images
-    : ["https://via.placeholder.com/400"];
+    : [""];
   const hasDiscount = product.discountPercent > 0;
   const isOutOfStock = product.stock <= 0;
   // Remaining stock available to add to cart
@@ -243,7 +243,7 @@ const ProductDetail = () => {
                   src={images[currentIndex]}
                   alt={product.name}
                   onError={(e) =>
-                    (e.target.src = "https://via.placeholder.com/400")
+                    (e.target.src = "")
                   }
                   className="w-full h-full object-cover"
                 />

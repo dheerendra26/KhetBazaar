@@ -1110,7 +1110,7 @@ const FarmerDashboard = () => {
                     <div key={product._id} className={`border-2 rounded-2xl p-4 transition ${isOut ? "border-red-200 bg-red-50" : isLow ? "border-orange-200 bg-orange-50" : "border-gray-100 bg-white"}`}>
                       <div className="flex items-start gap-4 flex-wrap">
                         <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 border">
-                          <img src={product.images?.[0]} alt={tn(product.name)} className="w-full h-full object-cover" onError={e => e.target.src = "https://via.placeholder.com/64"} />
+                          <img src={product.images?.[0]} alt={tn(product.name)} className="w-full h-full object-cover" onError={e => e.target.src = ""} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1">

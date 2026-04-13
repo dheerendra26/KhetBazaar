@@ -390,10 +390,10 @@ const Shop = () => {
                   <div className="h-44 bg-gray-100">
                     <img
                       src={
-                        product.images?.[0] || "https://via.placeholder.com/300"
+                        product.images?.[0] || ""
                       }
                       onError={(e) =>
-                        (e.target.src = "https://via.placeholder.com/300")
+                        (e.target.src = "")
                       }
                       className="w-full h-full object-cover"
                       alt={tn(product.name)}

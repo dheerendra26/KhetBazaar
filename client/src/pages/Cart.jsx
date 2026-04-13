@@ -87,7 +87,7 @@ const Cart = () => {
             <div key={item._id} className="p-4 flex items-center gap-4">
               <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
                 <img src={item.image} alt={item.name} className="w-full h-full object-cover"
-                  onError={e => e.target.src = "https://via.placeholder.com/80"} />
+                  onError={e => e.target.src = ""} />
               </div>
               <div className="flex-1 min-w-0">
                 <Link to={`/product/${item._id}`} className="font-semibold text-gray-800 hover:text-green-600 block truncate">
