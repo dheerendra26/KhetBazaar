@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLang } from "../context/LanguageContext";
+import { translateBatch } from "../utils/useTranslate";
 
 const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -32,6 +33,7 @@ const Shop = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [error, setError] = useState("");
+  const [translatedNames, setTranslatedNames] = useState({}); // { [originalName]: hindiName }
   const [filter, setFilter] = useState({
     price: "",
     minPrice: "",
@@ -44,7 +46,7 @@ const Shop = () => {
   });
 
   const { isAuthenticated } = useAuth();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const navigate = useNavigate();
 
   // Get GPS location on mount
@@ -58,6 +60,22 @@ const Shop = () => {
       () => console.log("Location denied"),
     );
   }, []);
+
+  // Batch-translate product names when lang switches to Hindi
+  useEffect(() => {
+    if (lang !== "hi" || products.length === 0) {
+      setTranslatedNames({});
+      return;
+    }
+    const names = [...new Set(products.map(p => p.name).filter(Boolean))];
+    translateBatch(names, "hi").then(results => {
+      const map = {};
+      names.forEach((n, i) => { if (results[i] && results[i] !== n) map[n] = results[i]; });
+      setTranslatedNames(map);
+    }).catch(() => {});
+  }, [products, lang]);
+
+  const tn = (name) => translatedNames[name] || name;
 
   // Fetch products
   useEffect(() => {
@@ -378,14 +396,14 @@ const Shop = () => {
                         (e.target.src = "https://via.placeholder.com/300")
                       }
                       className="w-full h-full object-cover"
-                      alt={product.name}
+                      alt={tn(product.name)}
                     />
                   </div>
 
                   {/* Content */}
                   <div className="p-3 flex flex-col flex-1">
                     <h2 className="font-semibold text-gray-800 text-sm leading-tight">
-                      {product.name}
+                      {tn(product.name)}
                     </h2>
 
                     {/* Direct from Farmer tag */}
