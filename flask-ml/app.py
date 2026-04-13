@@ -33,7 +33,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Flask running on Vercel 🚀"
+    return "KhetBazaar ML Service running on Render 🚀"
   
 
 CORS(app)
@@ -288,6 +288,6 @@ def predict_timeline():
 
 if __name__ == "__main__":
     rf_model, label_enc = load_or_train()
-    port = int(os.environ.get("FLASK_PORT", 5001))
+    port = int(os.environ.get("PORT", 10000))
     print(f"[Flask] Starting on port {port}")
     app.run(host="0.0.0.0", port=port, debug=False)
