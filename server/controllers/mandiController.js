@@ -572,7 +572,7 @@ exports.profitComparison = async (req, res) => {
     const earningsWithMiddleman    = +(withMiddlemanPerKg    * qty).toFixed(2);
     const earningsWithoutMiddleman = +(withoutMiddlemanPerKg * qty).toFixed(2);
     const profitGain               = +(earningsWithoutMiddleman - earningsWithMiddleman).toFixed(2);
-    const profitGainPct            = +(( profitGain / earningsWithMiddleman ) * 100).toFixed(1);
+    //const profitGainPct            = +(( profitGain / earningsWithMiddleman ) * 100).toFixed(1);
 
     return res.json({
       crop,
@@ -598,7 +598,7 @@ exports.profitComparison = async (req, res) => {
         basis: "Based on eNAM & FPO direct marketing data: farmers earn 15-25% above modal price when selling directly"
       },
       profit_gain:     profitGain,
-      profit_gain_pct: profitGainPct,
+      // profit_gain_pct: profitGainPct,
     });
   } catch (err) {
     console.error("profitComparison error:", err.message);

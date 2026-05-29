@@ -6,6 +6,9 @@ const { sendOTPEmail } = require("../utils/sendEmail");
 
 module.exports.registerUser = async (req, res) => {
   try {
+    // `contact` is the farmer's phone number — required when registering as farmer.
+    // It is NEVER returned in any public API response; shared only via email
+    // to customers after a confirmed purchase.
     let { name, email, contact, address, roles } = req.body;
 
     // Check if user already exists — prevent role change
@@ -22,6 +25,14 @@ module.exports.registerUser = async (req, res) => {
     else if (roles.includes("farmer")) role = 2;
     else role = 1;
 
+    // Validate phone when registering as farmer
+    const isFarmer = role === 2 || role === 3;
+    if (isFarmer && (!contact || contact.trim().length < 10)) {
+      return res.status(400).json({
+        message: "Phone number is required for farmer accounts (minimum 10 digits).",
+      });
+    }
+
     let otp = generateOTP();
 
     const salt = await bcrypt.genSalt(10);
@@ -29,15 +40,17 @@ module.exports.registerUser = async (req, res) => {
 
     let user;
     if (existingUser) {
-      existingUser.otp = hashedOTP;
+      existingUser.otp  = hashedOTP;
       existingUser.role = role;
+      // Update contact if provided (allows farmer to fix their number on re-register)
+      if (contact && contact.trim()) existingUser.contact = contact.trim();
       await existingUser.save();
       user = existingUser;
     } else {
       user = await userModel.create({
         name,
         email,
-        contact,
+        contact: contact ? contact.trim() : undefined,
         address,
         otp: hashedOTP,
         role,

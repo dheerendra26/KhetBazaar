@@ -121,7 +121,7 @@ router.get("/sales-check/:id", async (req, res) => {
 /* ── EDIT PRODUCT ── */
 router.put("/edit/:id", async (req, res) => {
   try {
-    const { email, name, description, price, marketPrice, images, stock, discountPercent, isOrganic, isVerified } = req.body;
+    const { email, name, description, price, marketPrice, images, stock, discountPercent, isOrganic, isVerified, category } = req.body;
     const product = await productsModel.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
     if (product.email !== email) return res.status(403).json({ message: "Unauthorized: You can only edit your own products" });
@@ -155,6 +155,7 @@ router.put("/edit/:id", async (req, res) => {
     }
     if (isOrganic !== undefined) updatedFields.isOrganic = !!isOrganic;
     if (isVerified !== undefined) updatedFields.isVerified = !!isVerified;
+    if (category !== undefined) updatedFields.category = category;
 
     const updated = await productsModel.findByIdAndUpdate(req.params.id, { $set: updatedFields }, { new: true });
     res.status(200).json({ message: "Product updated successfully", product: updated });
