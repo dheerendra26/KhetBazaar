@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLang } from "../context/LanguageContext";
 import { translateBatch } from "../utils/useTranslate";
 import axios from "axios";
+import { roundToTwo } from "../utils/generic";
 
 const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -527,7 +528,7 @@ const FarmerDashboard = () => {
                     Total: {(analytics.totalSold || 0).toLocaleString("en-IN")} units
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 mb-4">Ranked highest to lowest • includes all-time sold count</p>
+                <p className="text-xs text-gray-400 mb-8">Ranked highest to lowest • includes all-time sold count</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -624,7 +625,7 @@ const FarmerDashboard = () => {
               <>
                 {/* Units Sold Chart */}
                 <div className="bg-white rounded-xl shadow p-6">
-                  <div className="mb-4">
+                  <div className="mb-8">
                     <h3 className="font-bold text-gray-800 text-lg">📦 Units Sold per Product</h3>
                     <p className="text-xs text-gray-400 mt-0.5">Number of units sold — higher bar = more sales</p>
                   </div>
@@ -650,7 +651,7 @@ const FarmerDashboard = () => {
 
                 {/* Revenue Chart */}
                 <div className="bg-white rounded-xl shadow p-6">
-                  <div className="mb-4">
+                  <div className="mb-8">
                     <h3 className="font-bold text-gray-800 text-lg">💰 Total Revenue (₹) per Product</h3>
                     <p className="text-xs text-gray-400 mt-0.5">Revenue earned per product — higher bar = more earnings</p>
                   </div>
@@ -1277,7 +1278,7 @@ const FarmerDashboard = () => {
                             </div>
                             <div className="text-right">
                               <p className="text-xs text-gray-400">Extra per {p.unit}</p>
-                              <p className="text-lg font-bold text-green-600">+₹{p.per_unit.gain} ({p.per_unit.gain_pct}%)</p>
+                              <p className="text-lg font-bold text-green-600">+₹{p.per_unit.gain} </p>
                             </div>
                           </div>
 
@@ -1319,7 +1320,7 @@ const FarmerDashboard = () => {
                             </div>
                             <div>
                               <p className="text-xs text-gray-400">You save</p>
-                              <p className="font-bold text-blue-600 text-sm">+₹{p.projected.extra_earned.toLocaleString("en-IN")}</p>
+                              <p className="font-bold text-blue-600 text-sm">+₹{ roundToTwo(p.projected.extra_earned.toLocaleString("en-IN"))}</p>
                               <p className="text-xs text-gray-400">extra earned</p>
                             </div>
                           </div>

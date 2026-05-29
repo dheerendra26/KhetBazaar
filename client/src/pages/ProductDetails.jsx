@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLang } from "../context/LanguageContext";
+import { roundToTwo } from "../utils/generic";
 
 const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -377,7 +378,7 @@ const ProductDetail = () => {
                             Market Price
                           </p>
                           <span className="text-xl text-gray-400 line-through font-semibold">
-                            ₹{product.marketPrice || product.originalPrice}
+                            ₹{roundToTwo( product.marketPrice || product.originalPrice)}
                           </span>
                         </div>
                       ) : null}
@@ -388,8 +389,8 @@ const ProductDetail = () => {
                       <div className="mt-2 flex items-center gap-2">
                         <span className="bg-orange-100 text-orange-700 font-bold text-sm px-3 py-1 rounded-full">
                           💚 You save ₹
-                          {(product.marketPrice || product.originalPrice) -
-                            product.price}{" "}
+                          { roundToTwo( (product.marketPrice || product.originalPrice) -
+                            product.price)}{" "}
                           per {product.unit || "kg"}
                         </span>
                         {hasDiscount && product.discountPercent > 0 && (

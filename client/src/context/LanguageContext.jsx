@@ -35,7 +35,8 @@ export const translations = {
     directFromFarm: "Direct from Farm", directFromFarmDesc: "No middlemen, no markup. Buy straight from the farmer who grew it.",
     qualityVerified: "Quality Verified", qualityVerifiedDesc: "Every product vetted for freshness and quality before listing.",
     organicFirst: "Organic First", organicFirstDesc: "Prioritizing natural farming practices for healthier produce.",
-    fastDelivery: "Fast Delivery", fastDeliveryDesc: "Fresh produce delivered to your doorstep within 24–48 hours.",
+    directContact: "Direct Contact",
+    directContactDesc: "Connect directly with farmers via phone or email after purchase.",
     // categories
     vegetables: "Vegetables", fruits: "Fruits", dairy: "Dairy", seeds: "Seeds",
     browse: "Browse",
@@ -227,7 +228,8 @@ export const translations = {
     directFromFarm: "सीधे खेत से", directFromFarmDesc: "कोई बिचौलिया नहीं। जिस किसान ने उगाया, उससे सीधे खरीदें।",
     qualityVerified: "गुणवत्ता जांची", qualityVerifiedDesc: "हर उत्पाद की ताजगी और गुणवत्ता की जांच लिस्टिंग से पहले होती है।",
     organicFirst: "जैविक पहले", organicFirstDesc: "स्वस्थ उत्पाद के लिए प्राकृतिक खेती को प्राथमिकता।",
-    fastDelivery: "तेज डिलीवरी", fastDeliveryDesc: "24–48 घंटों के भीतर ताजा उत्पाद आपके दरवाजे तक।",
+    
+    directContact: "सीधा संपर्क",directContactDesc: "खरीद के बाद किसान से फोन या ईमेल के माध्यम से सीधे संपर्क करें।",
     vegetables: "सब्जियां", fruits: "फल", dairy: "डेयरी", seeds: "बीज",
     browse: "देखें",
 

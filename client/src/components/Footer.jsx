@@ -24,7 +24,7 @@ const Footer = () => {
             {[
               { to: "/",       label: t("home") },
               { to: "/about",  label: t("aboutUs") },
-              { to: "#",       label: t("delivery") },
+              //{ to: "#",       label: t("delivery") },
               { to: "/privacy",label: t("privacyPolicy") },
             ].map((item) => (
               <li key={item.to + item.label}>
@@ -38,8 +38,8 @@ const Footer = () => {
         <div>
           <p className="text-xl font-semibold text-gray-800 mb-4">{t("getInTouch")}</p>
           <ul className="space-y-3 text-gray-600">
-            <li className="flex items-center gap-3 hover:text-green-600 transition"><FaPhoneAlt />+91-98765-43210</li>
-            <li className="flex items-center gap-3 hover:text-green-600 transition"><MdEmail />support@khetbazaar.com</li>
+            <li className="flex items-center gap-3 hover:text-green-600 transition"><FaPhoneAlt />+91-98765-XXXXX</li>
+            <li className="flex items-center gap-3 hover:text-green-600 transition"><MdEmail />support@khetbazXXX.com</li>
           </ul>
         </div>
       </div>

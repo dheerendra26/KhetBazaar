@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLang } from "../context/LanguageContext";
 import { translateBatch } from "../utils/useTranslate";
+import { roundToTwo } from "../utils/generic";
 
 const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -67,12 +68,16 @@ const Shop = () => {
       setTranslatedNames({});
       return;
     }
-    const names = [...new Set(products.map(p => p.name).filter(Boolean))];
-    translateBatch(names, "hi").then(results => {
-      const map = {};
-      names.forEach((n, i) => { if (results[i] && results[i] !== n) map[n] = results[i]; });
-      setTranslatedNames(map);
-    }).catch(() => {});
+    const names = [...new Set(products.map((p) => p.name).filter(Boolean))];
+    translateBatch(names, "hi")
+      .then((results) => {
+        const map = {};
+        names.forEach((n, i) => {
+          if (results[i] && results[i] !== n) map[n] = results[i];
+        });
+        setTranslatedNames(map);
+      })
+      .catch(() => {});
   }, [products, lang]);
 
   const tn = (name) => translatedNames[name] || name;
@@ -389,12 +394,8 @@ const Shop = () => {
                   {/* Image */}
                   <div className="h-44 bg-gray-100">
                     <img
-                      src={
-                        product.images?.[0] || ""
-                      }
-                      onError={(e) =>
-                        (e.target.src = "")
-                      }
+                      src={product.images?.[0] || ""}
+                      onError={(e) => (e.target.src = "")}
                       className="w-full h-full object-cover"
                       alt={tn(product.name)}
                     />
@@ -449,37 +450,39 @@ const Shop = () => {
                       product.marketPrice > product.price ? (
                         <div className="flex items-center gap-1 mt-0.5">
                           <span className="text-gray-400 text-xs line-through">
-                            Market ₹{product.marketPrice}
+                            Market ₹{roundToTwo(product.marketPrice)}
                           </span>
                           <span className="text-xs text-orange-600 font-semibold">
-                            Save ₹{product.marketPrice - product.price}
+                            Save ₹
+                            {roundToTwo(product.marketPrice - product.price)}
                           </span>
                         </div>
                       ) : hasDiscount && product.originalPrice ? (
                         <div className="flex items-center gap-1 mt-0.5">
                           <span className="text-gray-400 text-xs line-through">
-                            Market ₹{product.originalPrice}
+                            Market ₹{roundToTwo(product.originalPrice)}
                           </span>
                           <span className="text-xs text-orange-600 font-semibold">
-                            Save ₹{product.originalPrice - product.price}
+                            Save ₹
+                            {roundToTwo(product.originalPrice - product.price)}
                           </span>
                         </div>
                       ) : null}
                     </div>
 
-                    <p className="text-xs text-gray-400 mt-1.5">
+                    <p className="text-xs text-gray-400 mt-1.5 mb-2">
                       🛒 {product.soldCount || 0} sold
                     </p>
 
                     {isOut ? (
                       <button
                         disabled
-                        className="mt-2 w-full bg-gray-300 text-gray-500 py-1.5 rounded-lg text-sm cursor-not-allowed"
+                        className="mt-auto w-full bg-gray-300 text-gray-500 py-1.5 rounded-lg text-sm cursor-not-allowed"
                       >
                         ❌ Out of Stock
                       </button>
                     ) : (
-                      <button className="mt-2 w-full bg-green-600 text-white py-1.5 rounded-lg text-sm hover:bg-green-700 transition">
+                      <button className="mt-auto w-full bg-green-600 text-white py-1.5 rounded-lg text-sm hover:bg-green-700 transition">
                         View Product
                       </button>
                     )}

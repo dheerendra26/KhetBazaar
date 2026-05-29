@@ -13,7 +13,7 @@ const Cart = () => {
   useEffect(() => {
     if (!isAuthenticated) { navigate("/login"); return; }
     const rawCart = JSON.parse(localStorage.getItem("cart") || "[]");
-    // FIX: Sanitize cart on load — remove items with invalid qty, clamp negatives to 1
+     
     const sanitized = rawCart
       .map(item => ({ ...item, quantity: Math.max(1, Math.abs(item.quantity || 1)) }))
       .filter(item => item._id && item.quantity > 0);
@@ -21,22 +21,20 @@ const Cart = () => {
     localStorage.setItem("cart", JSON.stringify(sanitized));
   }, [isAuthenticated, navigate]);
 
-  // FIX: updateQty only runs for items that are actually in the cart.
-  // Minimum qty is 1; pressing − at qty=1 prompts removal instead of going negative.
+  
   const updateQty = (productId, newQty) => {
-    // FIX: Ensure the item is actually in cart before updating
     const itemInCart = cart.find(item => item._id === productId);
     if (!itemInCart) return;
 
     if (newQty < 1) {
-      // Instead of going to 0 or negative, remove the item
+     
       removeFromCart(productId);
       return;
     }
 
     const updated = cart.map(item =>
       item._id === productId
-        ? { ...item, quantity: Math.max(1, newQty) } // never store below 1
+        ? { ...item, quantity: Math.max(1, newQty) } 
         : item
     );
     setCart(updated);
@@ -54,7 +52,7 @@ const Cart = () => {
     localStorage.setItem("cart", JSON.stringify([]));
   };
 
-  // FIX: Use Math.max(0, ...) to ensure totals never go negative
+  
   const totalItems = cart.reduce((sum, item) => sum + Math.max(0, item.quantity), 0);
   const totalPrice = cart.reduce((sum, item) => sum + item.price * Math.max(0, item.quantity), 0);
 
@@ -96,7 +94,7 @@ const Cart = () => {
                 <p className="text-green-600 font-medium">₹{item.price} / {item.unit || "kg"}</p>
               </div>
               <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
-                {/* FIX: − button at qty=1 removes the item; never goes to 0 or negative */}
+                
                 <button
                   onClick={() => updateQty(item._id, item.quantity - 1)}
                   className="w-7 h-7 flex items-center justify-center text-lg font-bold text-gray-600 hover:text-red-500"

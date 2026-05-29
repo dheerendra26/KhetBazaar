@@ -45,7 +45,7 @@ const RootLayout = () => (
 
 const router = createBrowserRouter([
   {
-    element: <RootLayout />,          // ← single shared layout for every route
+    element: <RootLayout />,          
     children: [
       { path: "/",               element: <Home /> },
       { path: "/about",          element: <About /> },

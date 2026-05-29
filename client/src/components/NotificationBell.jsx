@@ -23,7 +23,7 @@ const NotificationBell = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // poll every 30s
+    const interval = setInterval(fetchNotifications, 30000); 
     return () => clearInterval(interval);
   }, [isAuthenticated, email]);
 

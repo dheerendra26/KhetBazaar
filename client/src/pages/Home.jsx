@@ -16,7 +16,7 @@ const Home = () => {
     { icon: "🚜", titleKey: "directFromFarm",   descKey: "directFromFarmDesc" },
     { icon: "✅", titleKey: "qualityVerified",  descKey: "qualityVerifiedDesc" },
     { icon: "🌿", titleKey: "organicFirst",      descKey: "organicFirstDesc" },
-    { icon: "⚡", titleKey: "fastDelivery",      descKey: "fastDeliveryDesc" },
+    { icon: "📞", titleKey: "directContact", descKey: "directContactDesc" },
   ];
 
   const categories = [

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLang } from "../context/LanguageContext";
@@ -6,7 +6,6 @@ import { useLang } from "../context/LanguageContext";
 const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID;
 const API = import.meta.env.VITE_BACKEND_URL;
 
-/* ─── Razorpay SDK loader ───────────────────────────────────────── */
 const loadRazorpay = () =>
   new Promise((resolve) => {
     if (window.Razorpay) return resolve(true);
@@ -17,12 +16,9 @@ const loadRazorpay = () =>
     document.body.appendChild(script);
   });
 
-/* ─── Preset top-up amounts ─────────────────────────────────────── */
 const PRESET_AMOUNTS = [100, 250, 500, 1000, 2000, 5000];
 
-/* ═══════════════════════════════════════════════════════════════════
-   WalletTopUpModal — inline modal for adding funds via Razorpay
-═══════════════════════════════════════════════════════════════════ */
+
 const WalletTopUpModal = ({ onClose, onSuccess, currentBalance, email }) => {
   const [amount, setAmount] = useState("");
   const [customAmount, setCustomAmount] = useState("");
@@ -289,9 +285,6 @@ const WalletTopUpModal = ({ onClose, onSuccess, currentBalance, email }) => {
   );
 };
 
-/* ═══════════════════════════════════════════════════════════════════
-   Main CheckoutPage
-═══════════════════════════════════════════════════════════════════ */
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { userEmail } = useAuth();
@@ -305,9 +298,14 @@ const CheckoutPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Delivery address — collected before payment, sent ONLY to farmer via email.
+  // Never stored publicly or returned from any API endpoint.
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [addressTouched, setAddressTouched]   = useState(false);
+  const addressValid = deliveryAddress.trim().length >= 10;
+
   const email = userEmail || localStorage.getItem("userEmail");
 
-  /* ── Fetch wallet balance from dedicated REST endpoint ── */
   const fetchWalletBalance = useCallback(async () => {
     if (!email) return;
     setWalletLoading(true);
@@ -344,6 +342,17 @@ const CheckoutPage = () => {
       sellerEmail: item.sellerEmail || item.email || "seller@khetbazaar.com",
     }));
 
+  // Gate: block payment if address not filled
+  const checkAddress = () => {
+    setAddressTouched(true);
+    if (!addressValid) {
+      setError("Please enter your complete delivery address before paying.");
+      document.getElementById("delivery-address")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return false;
+    }
+    return true;
+  };
+
   const sendOrderNotification = async (method) => {
     const res = await fetch(`${API}/orders`, {
       method: "POST",
@@ -352,6 +361,8 @@ const CheckoutPage = () => {
         buyerEmail: email,
         items: buildOrderItems(),
         paymentMethod: method,
+        // Delivery address — sent to farmer via email only, never stored publicly
+        buyerAddress: deliveryAddress.trim(),
       }),
     });
     const data = await res.json();
@@ -365,6 +376,8 @@ const CheckoutPage = () => {
 
   const handlePlaceOrder = async () => {
     setError("");
+    // Always validate delivery address before any payment method
+    if (!checkAddress()) return;
     setLoading(true);
     try {
       if (paymentMethod === "cod") {
@@ -405,10 +418,37 @@ const CheckoutPage = () => {
           order_id: data.order.id,
           name: "KhetBazaar",
           description: "Fresh Farm Products",
-          handler: async () => {
-            await sendOrderNotification("razorpay");
-            localStorage.removeItem("cart");
-            navigate("/orders", { state: { success: true, method: "razorpay" } });
+          handler: async (response) => {
+            try {
+              // Verify payment on backend — this saves the order AND sends
+              // confirmation emails to customer + farmer(s) with full contact
+              // details. Emails are sent ONLY after signature verification.
+              const verifyRes = await fetch(
+                `${API}/payments/razorpay/verify-payment`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    razorpay_order_id:   response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature:  response.razorpay_signature,
+                    buyerEmail:          email,
+                    items:               buildOrderItems(),
+                    // Delivery address — passed to backend to include in farmer email only
+                    buyerAddress:        deliveryAddress.trim(),
+                  }),
+                }
+              );
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok || !verifyData.success) {
+                throw new Error(verifyData.message || "Payment verification failed");
+              }
+              localStorage.removeItem("cart");
+              navigate("/orders", { state: { success: true, method: "razorpay" } });
+            } catch (err) {
+              setError(err.message || "Order confirmation failed. Contact support.");
+              setLoading(false);
+            }
           },
           modal: { ondismiss: () => setLoading(false) },
           prefill: { email },
@@ -473,6 +513,41 @@ const CheckoutPage = () => {
               ₹{totalAmount.toLocaleString("en-IN")}
             </span>
           </div>
+        </div>
+
+        {/* ── Delivery Address ─────────────────────────────── */}
+        {/* Address is collected here and sent ONLY to the farmer via email.
+           It is never stored in a public field or shown anywhere on the site. */}
+        <div id="delivery-address" className="bg-white rounded-2xl shadow p-6 mb-5">
+          <h2 className="font-bold text-gray-700 mb-1 text-lg">📍 Delivery Address</h2>
+          <p className="text-xs text-gray-400 mb-4">
+            Your address is shared <strong>only with the farmer via email</strong> after
+            payment — it is never displayed publicly on the website.
+          </p>
+          <textarea
+            rows={3}
+            placeholder="House/Flat No., Street, Village/City, District, State, PIN Code"
+            value={deliveryAddress}
+            onChange={(e) => { setDeliveryAddress(e.target.value); setAddressTouched(true); if (error) setError(""); }}
+            onBlur={() => setAddressTouched(true)}
+            className={`w-full px-4 py-3 rounded-xl border-2 text-gray-800 text-sm resize-none focus:outline-none transition ${
+              addressTouched && !addressValid
+                ? "border-red-400 bg-red-50 focus:border-red-500"
+                : addressValid
+                ? "border-green-400 bg-green-50 focus:border-green-500"
+                : "border-gray-200 bg-gray-50 focus:border-green-400"
+            }`}
+          />
+          {addressTouched && !addressValid && (
+            <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+              ⚠️ Please enter your full delivery address (minimum 10 characters).
+            </p>
+          )}
+          {addressValid && (
+            <p className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
+              ✓ Address saved — will be emailed to the farmer after payment.
+            </p>
+          )}
         </div>
 
         {/* ── Wallet Balance Card ───────────────────────────── */}

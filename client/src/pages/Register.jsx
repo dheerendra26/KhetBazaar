@@ -6,30 +6,43 @@ import { useAuth } from "../context/AuthContext";
 const API = import.meta.env.VITE_BACKEND_URL;
 
 const Register = () => {
-  const [step, setStep]           = useState(1);
-  const [email, setEmail]         = useState("");
-  const [otp, setOtp]             = useState("");
-  const [customer, setCustomer]   = useState(false);
-  const [farmer, setFarmer]       = useState(false);
+  const [step, setStep]             = useState(1);
+  const [email, setEmail]           = useState("");
+  const [phone, setPhone]           = useState("");        // farmer's contact — saved to DB, shared via email only
+  const [otp, setOtp]               = useState("");
+  const [customer, setCustomer]     = useState(false);
+  const [farmer, setFarmer]         = useState(false);
   const [agreePolicy, setAgreePolicy] = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const [message, setMessage]     = useState(null);
+  const [loading, setLoading]       = useState(false);
+  const [message, setMessage]       = useState(null);
 
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
 
-  // Already logged in → redirect away
   useEffect(() => {
     if (isAuthenticated) navigate("/");
   }, [isAuthenticated, navigate]);
 
+  // Phone is required when farmer role is selected
+  const phoneRequired = farmer;
+  const phoneValid    = !phoneRequired || (phone.trim().length >= 10 && /^[0-9+\-\s()]+$/.test(phone.trim()));
+
   const isSubmitButtonDisabled =
-    loading || (!farmer && !customer) || !email || !agreePolicy || message?.type === "error";
+    loading ||
+    (!farmer && !customer) ||
+    !email ||
+    !agreePolicy ||
+    !phoneValid ||
+    message?.type === "error";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!customer && !farmer) {
       setMessage({ type: "error", text: "Please select at least one role." });
+      return;
+    }
+    if (phoneRequired && !phoneValid) {
+      setMessage({ type: "error", text: "Please enter a valid phone number (min 10 digits)." });
       return;
     }
     setLoading(true);
@@ -38,7 +51,11 @@ const Register = () => {
     if (customer) roles.push("customer");
     if (farmer)   roles.push("farmer");
     try {
-      const res = await axios.post(`${API}/register`, { email, roles });
+      const res = await axios.post(`${API}/register`, {
+        email,
+        roles,
+        contact: phone.trim() || undefined,   // only send if entered
+      });
       setMessage({ type: "success", text: res.data.message || "OTP sent! Check your email." });
       setStep(2);
     } catch (err) {
@@ -54,8 +71,6 @@ const Register = () => {
     setMessage(null);
     try {
       const res = await axios.post(`${API}/login`, { email, otp });
-      // Persist auth data to localStorage first, then do a full page reload
-      // so that the Navbar and entire app re-initialise with the correct auth state.
       login(res.data.token, email, res.data.role);
       window.location.href = "/";
     } catch (err) {
@@ -72,7 +87,11 @@ const Register = () => {
     if (customer) roles.push("customer");
     if (farmer)   roles.push("farmer");
     try {
-      await axios.post(`${API}/register`, { email, roles });
+      await axios.post(`${API}/register`, {
+        email,
+        roles,
+        contact: phone.trim() || undefined,
+      });
       setMessage({ type: "success", text: "OTP resent! Check your email." });
     } catch {
       setMessage({ type: "error", text: "Failed to resend OTP." });
@@ -87,6 +106,7 @@ const Register = () => {
       <div className="fixed bottom-0 right-0 w-96 h-96 bg-emerald-300 rounded-full opacity-20 blur-3xl translate-x-1/2 translate-y-1/2 pointer-events-none" />
 
       <div className="relative w-full max-w-lg">
+        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-2xl shadow-lg mb-4">
             <span className="text-3xl">🌾</span>
@@ -102,8 +122,11 @@ const Register = () => {
               {step === 1 ? "Create Account" : "Verify Email"}
             </h2>
             <p className="text-green-100 text-sm mt-1">
-              {step === 1 ? "Join thousands of farmers and buyers" : `OTP sent to ${email}`}
+              {step === 1
+                ? "Join thousands of farmers and buyers"
+                : `OTP sent to ${email}`}
             </p>
+            {/* Step indicator */}
             <div className="flex items-center gap-3 mt-4">
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 ${step >= 1 ? "bg-white text-green-700 border-white" : "border-green-300 text-green-300"}`}>1</div>
               <span className="text-green-100 text-xs">Details</span>
@@ -128,8 +151,12 @@ const Register = () => {
             {/* ── Step 1: Details ── */}
             {step === 1 && (
               <form onSubmit={handleSubmit} className="space-y-5">
+
+                {/* Email */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Email Address
+                  </label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">📧</span>
                     <input
@@ -143,8 +170,11 @@ const Register = () => {
                   </div>
                 </div>
 
+                {/* Role selection */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">Select Your Role</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Select Your Role
+                  </label>
                   <div className="grid grid-cols-2 gap-3">
                     <label className={`flex flex-col items-center gap-2 cursor-pointer p-4 border-2 rounded-xl transition ${customer ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-green-300"}`}>
                       <input type="checkbox" checked={customer} onChange={() => setCustomer(!customer)} className="sr-only" />
@@ -163,6 +193,42 @@ const Register = () => {
                   </div>
                 </div>
 
+                {/* ── Phone field — shown only when Farmer is selected ── */}
+                {farmer && (
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">📞</span>
+                      <span className="text-sm font-semibold text-emerald-800">
+                        Farmer Phone Number <span className="text-red-500">*</span>
+                      </span>
+                    </div>
+                    <input
+                      type="tel"
+                      placeholder="e.g. +91 98765 43210"
+                      value={phone}
+                      onChange={(e) => { setPhone(e.target.value); setMessage(null); }}
+                      required={phoneRequired}
+                      className="w-full px-4 py-3 rounded-xl border border-emerald-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition text-gray-800"
+                    />
+                    {/* Privacy notice — very explicit */}
+                    <div className="flex items-start gap-2 bg-white border border-emerald-200 rounded-xl px-3 py-2.5">
+                      <span className="text-amber-500 mt-0.5 flex-shrink-0">🔒</span>
+                      <p className="text-xs text-gray-600 leading-relaxed">
+                        <strong className="text-emerald-700">Privacy protected:</strong> Your phone
+                        number is <strong>never shown on the website</strong>. It is shared
+                        <strong> only via email</strong> with customers who have already
+                        completed a purchase of your product — so they can coordinate delivery.
+                      </p>
+                    </div>
+                    {phone && !phoneValid && (
+                      <p className="text-xs text-red-500 flex items-center gap-1">
+                        ⚠️ Please enter a valid phone number (minimum 10 digits).
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Privacy Policy */}
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <div className={`mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition ${agreePolicy ? "bg-green-600 border-green-600" : "border-gray-300 group-hover:border-green-400"}`}>
                     {agreePolicy && <span className="text-white text-xs font-bold">✓</span>}
@@ -170,7 +236,9 @@ const Register = () => {
                   <input type="checkbox" checked={agreePolicy} onChange={(e) => setAgreePolicy(e.target.checked)} className="sr-only" />
                   <span className="text-sm text-gray-600">
                     I agree to the{" "}
-                    <Link to="/privacy" className="text-green-600 font-semibold hover:underline">Privacy Policy</Link>
+                    <Link to="/privacy" className="text-green-600 font-semibold hover:underline">
+                      Privacy Policy
+                    </Link>
                     {" "}and Terms of Service
                   </span>
                 </label>
@@ -197,7 +265,11 @@ const Register = () => {
                 <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
                   <p className="text-green-700 text-sm">OTP sent to</p>
                   <p className="text-green-900 font-bold">{email}</p>
-                  <button type="button" onClick={() => { setStep(1); setOtp(""); setMessage(null); }} className="text-green-600 text-xs underline mt-1">
+                  <button
+                    type="button"
+                    onClick={() => { setStep(1); setOtp(""); setMessage(null); }}
+                    className="text-green-600 text-xs underline mt-1"
+                  >
                     Change email
                   </button>
                 </div>
@@ -229,7 +301,12 @@ const Register = () => {
                     : "✅ Verify & Enter KhetBazaar"}
                 </button>
 
-                <button type="button" onClick={handleResendOTP} disabled={loading} className="w-full py-2.5 rounded-xl border border-green-500 text-green-600 text-sm font-medium hover:bg-green-50 transition">
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  disabled={loading}
+                  className="w-full py-2.5 rounded-xl border border-green-500 text-green-600 text-sm font-medium hover:bg-green-50 transition"
+                >
                   Resend OTP
                 </button>
               </form>
@@ -237,7 +314,12 @@ const Register = () => {
 
             <div className="mt-6 text-center text-sm text-gray-500">
               Already have an account?{" "}
-              <span onClick={() => navigate("/login")} className="text-green-600 font-semibold hover:underline cursor-pointer">Login</span>
+              <span
+                onClick={() => navigate("/login")}
+                className="text-green-600 font-semibold hover:underline cursor-pointer"
+              >
+                Login
+              </span>
             </div>
           </div>
         </div>
