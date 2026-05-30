@@ -41,7 +41,7 @@ const sendBrevoEmail = async ({ to, subject, html }) => {
         "api-key": process.env.BREVO_API_KEY,
         "Content-Type": "application/json",
       },
-    }
+    },
   );
   return response.data;
 };
@@ -66,7 +66,9 @@ const sendMail = async ({ to, subject, html }) => {
    Shared HTML Helpers
 ───────────────────────────────────────────────────────── */
 const formatCurrency = (amount) =>
-  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(amount);
+  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(
+    amount,
+  );
 
 const wrapHtml = (body) => `
 <!DOCTYPE html>
@@ -118,7 +120,9 @@ const wrapHtml = (body) => `
 </html>`;
 
 const buildItemsTable = (items) => {
-  const rows = items.map((item) => `
+  const rows = items
+    .map(
+      (item) => `
     <tr>
       <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">
         ${item.productName}
@@ -135,7 +139,9 @@ const buildItemsTable = (items) => {
                  text-align:right;font-weight:600;color:#2e7d32;">
         ${formatCurrency(item.productPrice * item.quantity)}
       </td>
-    </tr>`).join("");
+    </tr>`,
+    )
+    .join("");
 
   return `
     <table style="width:100%;border-collapse:collapse;font-size:14px;">
@@ -151,9 +157,6 @@ const buildItemsTable = (items) => {
     </table>`;
 };
 
-/* ─────────────────────────────────────────────────────────
-   1. OTP Email (existing — unchanged)
-───────────────────────────────────────────────────────── */
 const sendOTPEmail = async (email, otp) => {
   try {
     const result = await sendMail({
@@ -173,13 +176,14 @@ const sendOTPEmail = async (email, otp) => {
     return { success: true, message: "OTP sent successfully", result };
   } catch (err) {
     console.error("Error sending OTP email:", err);
-    return { success: false, message: "Failed to send OTP", error: err.message };
+    return {
+      success: false,
+      message: "Failed to send OTP",
+      error: err.message,
+    };
   }
 };
 
-/* ─────────────────────────────────────────────────────────
-   2. Listing Confirmation Email (existing — unchanged)
-───────────────────────────────────────────────────────── */
 const sendListingConfirmationEmail = async (email, product) => {
   try {
     const result = await sendMail({
@@ -199,16 +203,21 @@ const sendListingConfirmationEmail = async (email, product) => {
           <p>Thank you for listing with us!</p>
         </div>`,
     });
-    return { success: true, message: "Listing confirmation email sent", result };
+    return {
+      success: true,
+      message: "Listing confirmation email sent",
+      result,
+    };
   } catch (err) {
     console.error("Error sending listing confirmation email:", err);
-    return { success: false, message: "Failed to send listing confirmation email", error: err.message };
+    return {
+      success: false,
+      message: "Failed to send listing confirmation email",
+      error: err.message,
+    };
   }
 };
 
-/* ─────────────────────────────────────────────────────────
-   3. Listing Deletion Email (existing — unchanged)
-───────────────────────────────────────────────────────── */
 const sendListingDeletionEmail = async (email, product) => {
   try {
     const result = await sendMail({
@@ -231,24 +240,21 @@ const sendListingDeletionEmail = async (email, product) => {
     return { success: true, message: "Listing deletion email sent", result };
   } catch (err) {
     console.error("Error sending listing deletion email:", err);
-    return { success: false, message: "Failed to send listing deletion email", error: err.message };
+    return {
+      success: false,
+      message: "Failed to send listing deletion email",
+      error: err.message,
+    };
   }
 };
 
-/* ─────────────────────────────────────────────────────────
-   4. ORDER CONFIRMATION → CUSTOMER  (NEW)
-   Sent after successful payment (Razorpay verified / wallet / COD).
-   Includes: order summary + farmer name & phone per item.
-   NOTE: farmer contact is ONLY shared here, never in API responses.
-───────────────────────────────────────────────────────── */
 const sendOrderConfirmationToCustomer = async ({
-  buyer,       // { name, email, contact, address }
-  items,       // array of { productName, productPrice, quantity, farmerName, farmerContact }
+  buyer,
+  items,
   totalPrice,
   paymentMethod,
 }) => {
   try {
-    // Build per-item farmer rows (group by unique farmer)
     const farmerMap = {};
     items.forEach((item) => {
       const key = item.farmerName + "|" + (item.farmerContact || "");
@@ -257,19 +263,25 @@ const sendOrderConfirmationToCustomer = async ({
       }
     });
 
-    const farmerRows = Object.values(farmerMap).map((f) => `
+    const farmerRows = Object.values(farmerMap)
+      .map(
+        (f) => `
       <tr>
         <td style="padding:9px 12px;border-bottom:1px solid #e8f5e9;
                    color:#2e7d32;font-weight:600;">${f.name || "—"}</td>
         <td style="padding:9px 12px;border-bottom:1px solid #e8f5e9;">
           ${f.contact || "—"}
         </td>
-      </tr>`).join("");
+      </tr>`,
+      )
+      .join("");
 
     const payLabel =
-      paymentMethod === "cod"    ? "Cash on Delivery" :
-      paymentMethod === "wallet" ? "KhetBazaar Wallet" :
-                                   "Online Payment (Razorpay)";
+      paymentMethod === "cod"
+        ? "Cash on Delivery"
+        : paymentMethod === "wallet"
+          ? "KhetBazaar Wallet"
+          : "Online Payment (Razorpay)";
 
     const body = `
       <h2 style="margin:0 0 4px;color:#2e7d32;font-size:22px;">
@@ -340,24 +352,20 @@ const sendOrderConfirmationToCustomer = async ({
   }
 };
 
-/* ─────────────────────────────────────────────────────────
-   5. NEW ORDER NOTIFICATION → FARMER  (NEW)
-   Sent after successful payment.
-   Includes: customer name, email, phone, address + items to fulfil.
-   NOTE: customer contact is ONLY shared here, never in API responses.
-───────────────────────────────────────────────────────── */
 const sendOrderNotificationToFarmer = async ({
-  farmer,      // { name, email }
-  buyer,       // { name, email, contact, address }
-  items,       // items for THIS farmer only
+  farmer,
+  buyer,
+  items,
   totalPrice,
   paymentMethod,
 }) => {
   try {
     const payLabel =
-      paymentMethod === "cod"    ? "Cash on Delivery" :
-      paymentMethod === "wallet" ? "KhetBazaar Wallet" :
-                                   "Online Payment (Razorpay)";
+      paymentMethod === "cod"
+        ? "Cash on Delivery"
+        : paymentMethod === "wallet"
+          ? "KhetBazaar Wallet"
+          : "Online Payment (Razorpay)";
 
     const body = `
       <h2 style="margin:0 0 4px;color:#2e7d32;font-size:22px;">
