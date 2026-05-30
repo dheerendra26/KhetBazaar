@@ -26,6 +26,7 @@ const corsOptions = {
     "http://localhost:5174",
     "https://khetbazaar.netlify.app",
     "https://farmersconnnect.netlify.app",
+    "https://khetbizarre.netlify.app",
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
