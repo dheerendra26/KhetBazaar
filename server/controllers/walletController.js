@@ -42,7 +42,6 @@ module.exports.topUpWallet = async (req, res) => {
       return res.status(400).json({ message: "Amount can have at most 2 decimal places" });
     }
 
-    // ── Atomic update via $inc (prevents race conditions) ────────────
     const updatedUser = await userModel.findOneAndUpdate(
       { email },
       { $inc: { walletBalance: parsedAmount } },

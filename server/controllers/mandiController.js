@@ -610,7 +610,6 @@ exports.profitComparison = async (req, res) => {
     const profitGain = +(
       earningsWithoutMiddleman - earningsWithMiddleman
     ).toFixed(2);
-    //const profitGainPct            = +(( profitGain / earningsWithMiddleman ) * 100).toFixed(1);
 
     return res.json({
       crop,

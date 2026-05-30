@@ -232,7 +232,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ── CTA ── */}
       <section className="py-20 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-center">
         <div className="max-w-2xl mx-auto px-6">
           <h2 className="text-3xl font-extrabold mb-4">

@@ -254,7 +254,6 @@ const EditProduct = () => {
               />
             </div>
 
-            {/* Market Price */}
             <div>
               <label className="text-sm font-medium text-gray-600 block mb-1">
                 Market / Mandi Price (₹) — optional
@@ -279,7 +278,6 @@ const EditProduct = () => {
                 )}
             </div>
 
-            {/* Discount */}
             <div>
               <label className="text-sm font-medium text-gray-600 block mb-1">
                 🏷️ Discount (%)
@@ -326,7 +324,6 @@ const EditProduct = () => {
               )}
             </div>
 
-            {/* Badges */}
             <div className="flex gap-6">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -341,7 +338,6 @@ const EditProduct = () => {
               <label className="flex items-center gap-2 cursor-pointer"></label>
             </div>
 
-            {/* Images */}
             <div>
               <label className="text-sm font-medium text-gray-600 block mb-1">
                 Product Images (URLs)

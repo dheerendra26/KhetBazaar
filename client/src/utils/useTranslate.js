@@ -19,8 +19,7 @@ import axios from "axios";
 
 const API = import.meta.env.VITE_BACKEND_URL;
 
-// ── Module-level session cache ───────────────────────────────────────────────
-const _cache = new Map(); // "text||target" → translatedText
+const _cache = new Map(); 
 
 function cacheKey(text, target) {
   return `${text}||${target}`;
@@ -48,7 +47,6 @@ export async function translateOne(text, target = "hi") {
     _cache.set(key, translated);
     return translated;
   } catch {
-    // Fallback: return original text so the UI never breaks
     return text;
   }
 }
@@ -64,9 +62,8 @@ export async function translateOne(text, target = "hi") {
 export async function translateBatch(texts, target = "hi") {
   if (!texts || texts.length === 0) return [];
 
-  // Separate already-cached vs needs-fetch
   const result      = new Array(texts.length);
-  const fetchIdxMap = []; // maps toFetch index → original index
+  const fetchIdxMap = []; 
 
   texts.forEach((t, i) => {
     const key = cacheKey((t || "").trim(), target);
@@ -127,7 +124,6 @@ export function useTranslatedText(text, lang = "en") {
       return;
     }
 
-    // Check cache synchronously first to avoid any flash
     const key = cacheKey(text.trim(), lang);
     if (_cache.has(key)) {
       setTranslated(_cache.get(key));
@@ -136,7 +132,6 @@ export function useTranslatedText(text, lang = "en") {
 
     setLoading(true);
     translateOne(text, lang).then(result => {
-      // Ignore stale results if text changed while request was in flight
       if (latestText.current === text) {
         setTranslated(result);
         setLoading(false);

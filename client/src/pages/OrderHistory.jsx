@@ -26,37 +26,37 @@ const generateInvoiceHTML = (order, userEmail, t) => {
         : t("onlineShort");
 
   return `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Invoice</title>
-<style>
-body{font-family:Arial;padding:40px;max-width:600px;margin:auto}
-.header{text-align:center;border-bottom:2px solid green;padding-bottom:10px;margin-bottom:20px}
-.info{margin:10px 0}
-.total{font-weight:bold;margin-top:10px}
-</style>
-</head>
-<body>
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Invoice</title>
+    <style>
+    body{font-family:Arial;padding:40px;max-width:600px;margin:auto}
+    .header{text-align:center;border-bottom:2px solid green;padding-bottom:10px;margin-bottom:20px}
+    .info{margin:10px 0}
+    .total{font-weight:bold;margin-top:10px}
+    </style>
+  </head>
+  <body>
 
-<div class="header">
-  <h2>KhetBazaar Invoice</h2>
-</div>
+    <div class="header">
+      <h2>KhetBazaar Invoice</h2>
+    </div>
 
-<div class="info"><strong>Customer:</strong> ${userEmail}</div>
-<div class="info"><strong>Product:</strong> ${order.productName}</div>
-<div class="info"><strong>Quantity:</strong> ${order.quantity}</div>
-<div class="info"><strong>Price:</strong> ₹${order.productPrice}</div>
-<div class="info"><strong>Payment:</strong> ${paymentLabel}</div>
+    <div class="info"><strong>Customer:</strong> ${userEmail}</div>
+    <div class="info"><strong>Product:</strong> ${order.productName}</div>
+    <div class="info"><strong>Quantity:</strong> ${order.quantity}</div>
+    <div class="info"><strong>Price:</strong> ₹${order.productPrice}</div>
+    <div class="info"><strong>Payment:</strong> ${paymentLabel}</div>
 
-<div class="total">
-  Total: ₹${order.totalPrice}
-</div>
+    <div class="total">
+      Total: ₹${order.totalPrice}
+    </div>
 
-</body>
-</html>
-`;
+  </body>
+  </html>
+  `;
 };
 
 const OrderHistory = () => {
@@ -124,7 +124,6 @@ const OrderHistory = () => {
 
             return (
               <div key={i} className="bg-white p-4 mb-4 rounded shadow">
-                {/* HEADER */}
                 <div
                   className="cursor-pointer"
                   onClick={() => setExpandedOrder(isExpanded ? null : i)}
