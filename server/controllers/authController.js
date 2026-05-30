@@ -4,7 +4,7 @@ const userModel = require("../models/userModel");
 const { generateOTP } = require("../utils/generateOTP");
 const { sendOTPEmail } = require("../utils/sendEmail");
 
-module.exports.registerUser = async (req, res) => {
+const registerUser = async (req, res) => {
   try {
     let { name, email, contact, address, roles } = req.body;
 
@@ -72,7 +72,7 @@ module.exports.registerUser = async (req, res) => {
   }
 };
 
-module.exports.sendLoginOTP = async (req, res) => {
+const sendLoginOTP = async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -107,44 +107,53 @@ module.exports.sendLoginOTP = async (req, res) => {
     }
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to send OTP", error: err.message });
+    res.status(500).json({
+      message: "Failed to send OTP",
+      error: err.message,
+    });
   }
 };
 
-module.exports.loginUser = async (req, res) => {
+const loginUser = async (req, res) => {
   const { email, otp } = req.body;
 
   try {
     const user = await userModel.findOne({ email });
+
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
     if (!user.isActive) {
-      return res
-        .status(403)
-        .json({
-          message: "Account has been deactivated. Please contact admin.",
-        });
+      return res.status(403).json({
+        message: "Account has been deactivated. Please contact admin.",
+      });
     }
 
     if (!user.otp) {
-      return res
-        .status(401)
-        .json({
-          message: "OTP expired or not found. Please request a new OTP.",
-        });
+      return res.status(401).json({
+        message: "OTP expired or not found. Please request a new OTP.",
+      });
     }
 
     const isOtpValid = await bcrypt.compare(otp, user.otp);
 
     if (!isOtpValid) {
-      return res.status(401).json({ message: "Incorrect OTP" });
+      return res.status(401).json({
+        message: "Incorrect OTP",
+      });
     }
 
-    const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    const token = jwt.sign(
+      { email: user.email },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
+
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -152,11 +161,33 @@ module.exports.loginUser = async (req, res) => {
       maxAge: 60 * 60 * 1000,
     });
 
-    await userModel.updateOne({ email }, { $unset: { otp: "" } });
+    await userModel.updateOne(
+      { email },
+      {
+        $unset: {
+          otp: "",
+        },
+      }
+    );
 
-    res.json({ message: "Login successful", token, email, role: user.role });
+    res.json({
+      message: "Login successful",
+      token,
+      email,
+      role: user.role,
+    });
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).json({ message: "Login failed", error: err.message });
+
+    res.status(500).json({
+      message: "Login failed",
+      error: err.message,
+    });
   }
+};
+
+module.exports = {
+  registerUser,
+  sendLoginOTP,
+  loginUser,
 };
