@@ -1,16 +1,24 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userEmail, setUserEmail]             = useState(null);
-  const [userRole, setUserRole]               = useState( localStorage.getItem("role") || null);
+  const [userEmail, setUserEmail] = useState(null);
+  const [userRole, setUserRole] = useState(
+    localStorage.getItem("role") || null,
+  );
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const email = localStorage.getItem("userEmail");
-    const role  = localStorage.getItem("role");
+    const role = localStorage.getItem("role");
     if (token) {
       setIsAuthenticated(true);
       setUserEmail(email);
@@ -18,13 +26,11 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
- 
   const login = useCallback((token, email, role) => {
-    
-    localStorage.setItem("token",     token);
+    localStorage.setItem("token", token);
     localStorage.setItem("userEmail", email);
-    localStorage.setItem("role",      role);
-    
+    localStorage.setItem("role", role);
+
     setIsAuthenticated(true);
     setUserEmail(email);
     setUserRole(role);
@@ -40,7 +46,9 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userEmail, userRole, login, logout }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, userEmail, userRole, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

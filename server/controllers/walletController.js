@@ -1,12 +1,8 @@
 const userModel = require("../models/userModel");
 
 const MIN_TOPUP = 1;
-const MAX_TOPUP = 100000; // ₹1,00,000 per transaction
+const MAX_TOPUP = 100000; 
 
-/**
- * GET /wallet/:email
- * Returns the current wallet balance for the authenticated user.
- */
 module.exports.getWalletBalance = async (req, res) => {
   try {
     const { email } = req.params;
@@ -22,16 +18,10 @@ module.exports.getWalletBalance = async (req, res) => {
   }
 };
 
-/**
- * POST /wallet/topup
- * Body: { email, amount }
- * Uses MongoDB $inc for atomic update to prevent race conditions.
- */
 module.exports.topUpWallet = async (req, res) => {
   try {
     const { email, amount } = req.body;
 
-    // ── Validation ──────────────────────────────────────────────────
     if (!email) return res.status(400).json({ message: "Email is required" });
 
     const parsedAmount = Number(amount);
@@ -49,7 +39,6 @@ module.exports.topUpWallet = async (req, res) => {
       return res.status(400).json({ message: `Maximum top-up per transaction is ₹${MAX_TOPUP.toLocaleString("en-IN")}` });
     }
     if (!Number.isInteger(parsedAmount * 100)) {
-      // Reject more than 2 decimal places (paise precision)
       return res.status(400).json({ message: "Amount can have at most 2 decimal places" });
     }
 
@@ -64,7 +53,6 @@ module.exports.topUpWallet = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Add a wallet notification
     await userModel.updateOne(
       { email },
       {
@@ -90,12 +78,6 @@ module.exports.topUpWallet = async (req, res) => {
   }
 };
 
-/**
- * POST /wallet/deduct
- * Body: { email, amount }
- * Atomically deducts from wallet; rejects if balance would go negative.
- * Used internally by the orders route (not exposed directly to client).
- */
 module.exports.deductWallet = async (req, res) => {
   try {
     const { email, amount } = req.body;
@@ -107,7 +89,6 @@ module.exports.deductWallet = async (req, res) => {
       return res.status(400).json({ message: "Invalid deduction amount" });
     }
 
-    // Atomic conditional update: only deduct if balance is sufficient
     const updatedUser = await userModel.findOneAndUpdate(
       { email, walletBalance: { $gte: parsedAmount } },
       { $inc: { walletBalance: -parsedAmount } },
@@ -115,7 +96,6 @@ module.exports.deductWallet = async (req, res) => {
     );
 
     if (!updatedUser) {
-      // Either user not found or insufficient balance
       const user = await userModel.findOne({ email }).select("walletBalance");
       if (!user) return res.status(404).json({ message: "User not found" });
       return res.status(400).json({

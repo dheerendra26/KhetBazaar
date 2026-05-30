@@ -6,16 +6,13 @@ const { sendOTPEmail } = require("../utils/sendEmail");
 
 module.exports.registerUser = async (req, res) => {
   try {
-    // `contact` is the farmer's phone number — required when registering as farmer.
-    // It is NEVER returned in any public API response; shared only via email
-    // to customers after a confirmed purchase.
     let { name, email, contact, address, roles } = req.body;
 
-    // Check if user already exists — prevent role change
     let existingUser = await userModel.findOne({ email });
     if (existingUser && existingUser.role) {
       return res.status(409).json({
-        message: "Account already exists. Role cannot be changed after registration. Please login instead.",
+        message:
+          "Account already exists. Role cannot be changed after registration. Please login instead.",
         isExisting: true,
       });
     }
@@ -25,11 +22,11 @@ module.exports.registerUser = async (req, res) => {
     else if (roles.includes("farmer")) role = 2;
     else role = 1;
 
-    // Validate phone when registering as farmer
     const isFarmer = role === 2 || role === 3;
     if (isFarmer && (!contact || contact.trim().length < 10)) {
       return res.status(400).json({
-        message: "Phone number is required for farmer accounts (minimum 10 digits).",
+        message:
+          "Phone number is required for farmer accounts (minimum 10 digits).",
       });
     }
 
@@ -40,9 +37,8 @@ module.exports.registerUser = async (req, res) => {
 
     let user;
     if (existingUser) {
-      existingUser.otp  = hashedOTP;
+      existingUser.otp = hashedOTP;
       existingUser.role = role;
-      // Update contact if provided (allows farmer to fix their number on re-register)
       if (contact && contact.trim()) existingUser.contact = contact.trim();
       await existingUser.save();
       user = existingUser;
@@ -76,7 +72,6 @@ module.exports.registerUser = async (req, res) => {
   }
 };
 
-// Send OTP for login (existing users)
 module.exports.sendLoginOTP = async (req, res) => {
   try {
     const { email } = req.body;
@@ -126,11 +121,19 @@ module.exports.loginUser = async (req, res) => {
     }
 
     if (!user.isActive) {
-      return res.status(403).json({ message: "Account has been deactivated. Please contact admin." });
+      return res
+        .status(403)
+        .json({
+          message: "Account has been deactivated. Please contact admin.",
+        });
     }
 
     if (!user.otp) {
-      return res.status(401).json({ message: "OTP expired or not found. Please request a new OTP." });
+      return res
+        .status(401)
+        .json({
+          message: "OTP expired or not found. Please request a new OTP.",
+        });
     }
 
     const isOtpValid = await bcrypt.compare(otp, user.otp);

@@ -23,12 +23,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
-# app = Flask(__name__)
-
-# if __name__ == "__main__":
-#     app.run()
-
 app = Flask(__name__)
 
 @app.route("/")
@@ -42,7 +36,6 @@ MONGO_URI = os.getenv("MONGO_URI")
 MODEL_PATH   = "model.pkl"
 ENCODER_PATH = "encoder.pkl"
 
-# ── DB helpers ─────────────────────────────────────────────────────────────────
 
 def get_db():
     client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
@@ -56,8 +49,6 @@ def load_data():
     df = pd.DataFrame(records)
     df.columns = [c.lower() for c in df.columns]
     return df
-
-# ── Model training ─────────────────────────────────────────────────────────────
 
 def train_model():
     df = load_data()
@@ -99,13 +90,6 @@ def load_or_train():
 
 rf_model, label_enc = None, None
 
-# ── Crop resolution ────────────────────────────────────────────────────────────
-
-# ── Display name → Agmarknet name aliases ─────────────────────────────────────
-# The Node.js seed script stores records under normalised display names
-# (e.g. "arhar dal"), but older seeds may have stored them under the raw API
-# name (e.g. "arhar(tur/red gram)(whole)").  The ML model is trained on whatever
-# names are in the DB, so we resolve display names → likely training names here.
 CROP_DISPLAY_ALIASES = {
     "arhar dal":  ["arhar(tur/red gram)(whole)", "tur", "arhar dal"],
     "chana dal":  ["bengal gram(split)", "gram(split)", "chana dal", "gram"],
@@ -129,16 +113,13 @@ def resolve_crop(crop_raw):
     crop  = str(crop_raw).strip().lower()
     known = list(label_enc.classes_)
 
-    # Exact match first
     if crop in known:
         return crop, None
 
-    # Try display-name aliases (covers pulse crops like "arhar dal" → "arhar(tur/red gram)(whole)")
     for alias in CROP_DISPLAY_ALIASES.get(crop, []):
         if alias in known:
             return alias, None
 
-    # Fuzzy: partial match against known names
     matches = [c for c in known if crop in c or c in crop]
     if matches:
         return matches[0], None
@@ -156,8 +137,6 @@ def predict_price_for(crop_encoded, day, month, year):
     if not np.isfinite(price) or price <= 0:
         raise ValueError(f"Model returned invalid price: {raw!r}")
     return round(price, 2)
-
-# ── Routes ─────────────────────────────────────────────────────────────────────
 
 @app.route("/health", methods=["GET"])
 def health():
@@ -192,7 +171,6 @@ def predict():
     body = request.get_json(force=True)
     now  = datetime.now()
 
-    # Validate and coerce date fields — bad inputs return 400 not 500
     try:
         day   = int(body.get("day",   now.day))
         month = int(body.get("month", now.month))
@@ -257,7 +235,6 @@ def predict_tomorrow():
     })
 
 
-# Keep /predict-timeline for backward compat — but now Node.js doesn't call it
 @app.route("/predict-timeline", methods=["POST"])
 def predict_timeline():
     """Legacy endpoint — Node.js v3 no longer uses this."""

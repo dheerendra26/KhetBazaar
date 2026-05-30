@@ -25,7 +25,11 @@ const orderItemSchema = new mongoose.Schema({
 
 const notificationSchema = new mongoose.Schema({
   message: String,
-  type: { type: String, enum: ["order", "price_drop", "new_product", "general"], default: "general" },
+  type: {
+    type: String,
+    enum: ["order", "price_drop", "new_product", "general"],
+    default: "general",
+  },
   read: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
@@ -36,13 +40,13 @@ const userSchema = mongoose.Schema({
   contact: String,
   address: String,
   otp: String,
-  role: { type: Number, enum: [1, 2, 3, 4] }, // 1=customer, 2=farmer, 3=both, 4=admin
+  role: { type: Number, enum: [1, 2, 3, 4] },
   orders: [orderItemSchema],
   notifications: [notificationSchema],
   walletBalance: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
   deactivatedAt: { type: Date, default: null },
-  deactivatedBy: { type: String, default: null }, // admin email
+  deactivatedBy: { type: String, default: null },
 });
 
 module.exports = mongoose.model("user", userSchema);

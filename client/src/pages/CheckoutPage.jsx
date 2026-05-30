@@ -18,7 +18,6 @@ const loadRazorpay = () =>
 
 const PRESET_AMOUNTS = [100, 250, 500, 1000, 2000, 5000];
 
-
 const WalletTopUpModal = ({ onClose, onSuccess, currentBalance, email }) => {
   const [amount, setAmount] = useState("");
   const [customAmount, setCustomAmount] = useState("");
@@ -89,14 +88,17 @@ const WalletTopUpModal = ({ onClose, onSuccess, currentBalance, email }) => {
               body: JSON.stringify({ email, amount: parsedAmount }),
             });
             const topupData = await topupRes.json();
-            if (!topupRes.ok) throw new Error(topupData.message || "Top-up failed");
+            if (!topupRes.ok)
+              throw new Error(topupData.message || "Top-up failed");
 
             setAddedAmount(parsedAmount);
             setNewBalance(topupData.walletBalance);
             setStep("success");
             onSuccess(topupData.walletBalance);
           } catch (err) {
-            setError(err.message || "Wallet credit failed. Please contact support.");
+            setError(
+              err.message || "Wallet credit failed. Please contact support.",
+            );
           } finally {
             setLoading(false);
           }
@@ -132,7 +134,9 @@ const WalletTopUpModal = ({ onClose, onSuccess, currentBalance, email }) => {
             >
               <span className="text-4xl">✅</span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-1">Wallet Topped Up!</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-1">
+              Wallet Topped Up!
+            </h3>
             <p className="text-gray-500 mb-2">
               <span className="font-semibold text-green-600">
                 ₹{addedAmount.toLocaleString("en-IN")}
@@ -156,7 +160,10 @@ const WalletTopUpModal = ({ onClose, onSuccess, currentBalance, email }) => {
           <>
             <div
               className="px-6 py-5 flex items-center justify-between"
-              style={{ background: "linear-gradient(135deg,#14532d 0%,#166534 60%,#15803d 100%)" }}
+              style={{
+                background:
+                  "linear-gradient(135deg,#14532d 0%,#166534 60%,#15803d 100%)",
+              }}
             >
               <div>
                 <p className="text-green-300 text-xs font-semibold tracking-widest uppercase mb-0.5">
@@ -179,7 +186,9 @@ const WalletTopUpModal = ({ onClose, onSuccess, currentBalance, email }) => {
                   💰
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400 font-medium">Current Balance</p>
+                  <p className="text-xs text-gray-400 font-medium">
+                    Current Balance
+                  </p>
                   <p className="text-lg font-extrabold text-green-700">
                     ₹{currentBalance.toLocaleString("en-IN")}
                   </p>
@@ -301,7 +310,7 @@ const CheckoutPage = () => {
   // Delivery address — collected before payment, sent ONLY to farmer via email.
   // Never stored publicly or returned from any API endpoint.
   const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [addressTouched, setAddressTouched]   = useState(false);
+  const [addressTouched, setAddressTouched] = useState(false);
   const addressValid = deliveryAddress.trim().length >= 10;
 
   const email = userEmail || localStorage.getItem("userEmail");
@@ -328,7 +337,10 @@ const CheckoutPage = () => {
     fetchWalletBalance();
   }, [fetchWalletBalance]);
 
-  const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalAmount = cart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
   const walletShortfall = Math.max(0, totalAmount - walletBalance);
   const walletSufficient = walletBalance >= totalAmount;
 
@@ -347,7 +359,9 @@ const CheckoutPage = () => {
     setAddressTouched(true);
     if (!addressValid) {
       setError("Please enter your complete delivery address before paying.");
-      document.getElementById("delivery-address")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document
+        .getElementById("delivery-address")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
       return false;
     }
     return true;
@@ -384,11 +398,10 @@ const CheckoutPage = () => {
         await sendOrderNotification("cod");
         localStorage.removeItem("cart");
         navigate("/orders", { state: { success: true, method: "cod" } });
-
       } else if (paymentMethod === "wallet") {
         if (!walletSufficient) {
           setError(
-            `Insufficient balance. You need ₹${walletShortfall.toLocaleString("en-IN")} more.`
+            `Insufficient balance. You need ₹${walletShortfall.toLocaleString("en-IN")} more.`,
           );
           setLoading(false);
           return;
@@ -396,7 +409,6 @@ const CheckoutPage = () => {
         await sendOrderNotification("wallet");
         localStorage.removeItem("cart");
         navigate("/orders", { state: { success: true, method: "wallet" } });
-
       } else {
         // Razorpay
         const loaded = await loadRazorpay();
@@ -429,24 +441,30 @@ const CheckoutPage = () => {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    razorpay_order_id:   response.razorpay_order_id,
+                    razorpay_order_id: response.razorpay_order_id,
                     razorpay_payment_id: response.razorpay_payment_id,
-                    razorpay_signature:  response.razorpay_signature,
-                    buyerEmail:          email,
-                    items:               buildOrderItems(),
+                    razorpay_signature: response.razorpay_signature,
+                    buyerEmail: email,
+                    items: buildOrderItems(),
                     // Delivery address — passed to backend to include in farmer email only
-                    buyerAddress:        deliveryAddress.trim(),
+                    buyerAddress: deliveryAddress.trim(),
                   }),
-                }
+                },
               );
               const verifyData = await verifyRes.json();
               if (!verifyRes.ok || !verifyData.success) {
-                throw new Error(verifyData.message || "Payment verification failed");
+                throw new Error(
+                  verifyData.message || "Payment verification failed",
+                );
               }
               localStorage.removeItem("cart");
-              navigate("/orders", { state: { success: true, method: "razorpay" } });
+              navigate("/orders", {
+                state: { success: true, method: "razorpay" },
+              });
             } catch (err) {
-              setError(err.message || "Order confirmation failed. Contact support.");
+              setError(
+                err.message || "Order confirmation failed. Contact support.",
+              );
               setLoading(false);
             }
           },
@@ -486,7 +504,9 @@ const CheckoutPage = () => {
 
         {/* ── Order Summary ─────────────────────────────────── */}
         <div className="bg-white rounded-2xl shadow p-6 mb-5">
-          <h2 className="font-bold text-gray-700 mb-4 text-lg">Order Summary</h2>
+          <h2 className="font-bold text-gray-700 mb-4 text-lg">
+            Order Summary
+          </h2>
           <div className="space-y-3">
             {cart.map((item, i) => (
               <div key={i} className="flex items-center gap-3">
@@ -496,7 +516,9 @@ const CheckoutPage = () => {
                   alt=""
                 />
                 <div className="flex-1">
-                  <p className="font-medium text-gray-800 text-sm">{item.name}</p>
+                  <p className="font-medium text-gray-800 text-sm">
+                    {item.name}
+                  </p>
                   <p className="text-xs text-gray-400">
                     Qty: {item.quantity} × ₹{item.price}
                   </p>
@@ -518,29 +540,40 @@ const CheckoutPage = () => {
         {/* ── Delivery Address ─────────────────────────────── */}
         {/* Address is collected here and sent ONLY to the farmer via email.
            It is never stored in a public field or shown anywhere on the site. */}
-        <div id="delivery-address" className="bg-white rounded-2xl shadow p-6 mb-5">
-          <h2 className="font-bold text-gray-700 mb-1 text-lg">📍 Delivery Address</h2>
+        <div
+          id="delivery-address"
+          className="bg-white rounded-2xl shadow p-6 mb-5"
+        >
+          <h2 className="font-bold text-gray-700 mb-1 text-lg">
+            📍 Delivery Address
+          </h2>
           <p className="text-xs text-gray-400 mb-4">
-            Your address is shared <strong>only with the farmer via email</strong> after
-            payment — it is never displayed publicly on the website.
+            Your address is shared{" "}
+            <strong>only with the farmer via email</strong> after payment — it
+            is never displayed publicly on the website.
           </p>
           <textarea
             rows={3}
             placeholder="House/Flat No., Street, Village/City, District, State, PIN Code"
             value={deliveryAddress}
-            onChange={(e) => { setDeliveryAddress(e.target.value); setAddressTouched(true); if (error) setError(""); }}
+            onChange={(e) => {
+              setDeliveryAddress(e.target.value);
+              setAddressTouched(true);
+              if (error) setError("");
+            }}
             onBlur={() => setAddressTouched(true)}
             className={`w-full px-4 py-3 rounded-xl border-2 text-gray-800 text-sm resize-none focus:outline-none transition ${
               addressTouched && !addressValid
                 ? "border-red-400 bg-red-50 focus:border-red-500"
                 : addressValid
-                ? "border-green-400 bg-green-50 focus:border-green-500"
-                : "border-gray-200 bg-gray-50 focus:border-green-400"
+                  ? "border-green-400 bg-green-50 focus:border-green-500"
+                  : "border-gray-200 bg-gray-50 focus:border-green-400"
             }`}
           />
           {addressTouched && !addressValid && (
             <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
-              ⚠️ Please enter your full delivery address (minimum 10 characters).
+              ⚠️ Please enter your full delivery address (minimum 10
+              characters).
             </p>
           )}
           {addressValid && (
@@ -554,7 +587,8 @@ const CheckoutPage = () => {
         <div
           className="rounded-2xl shadow-md p-5 mb-5 relative overflow-hidden"
           style={{
-            background: "linear-gradient(135deg,#14532d 0%,#166534 55%,#15803d 100%)",
+            background:
+              "linear-gradient(135deg,#14532d 0%,#166534 55%,#15803d 100%)",
           }}
         >
           {/* Decorative circles */}
@@ -609,11 +643,14 @@ const CheckoutPage = () => {
                 <p className="text-xs mt-1.5">
                   {walletSufficient ? (
                     <span className="text-green-300">
-                      ✓ Sufficient · ₹{(walletBalance - totalAmount).toLocaleString("en-IN")} will remain after purchase
+                      ✓ Sufficient · ₹
+                      {(walletBalance - totalAmount).toLocaleString("en-IN")}{" "}
+                      will remain after purchase
                     </span>
                   ) : (
                     <span className="text-yellow-300">
-                      ⚠ Need ₹{walletShortfall.toLocaleString("en-IN")} more to use wallet
+                      ⚠ Need ₹{walletShortfall.toLocaleString("en-IN")} more to
+                      use wallet
                     </span>
                   )}
                 </p>
@@ -624,7 +661,9 @@ const CheckoutPage = () => {
 
         {/* ── Payment Method ────────────────────────────────── */}
         <div className="bg-white rounded-2xl shadow p-6 mb-5">
-          <h2 className="font-bold text-gray-700 mb-4 text-lg">💳 Payment Method</h2>
+          <h2 className="font-bold text-gray-700 mb-4 text-lg">
+            💳 Payment Method
+          </h2>
           <div className="space-y-3">
             {[
               {
@@ -650,8 +689,8 @@ const CheckoutPage = () => {
                 sub: walletLoading
                   ? "Checking balance…"
                   : walletSufficient
-                  ? `Available: ₹${walletBalance.toLocaleString("en-IN")}`
-                  : `Need ₹${walletShortfall.toLocaleString("en-IN")} more`,
+                    ? `Available: ₹${walletBalance.toLocaleString("en-IN")}`
+                    : `Need ₹${walletShortfall.toLocaleString("en-IN")} more`,
                 badge: !walletLoading && walletSufficient ? "READY" : null,
                 subRed: !walletLoading && !walletSufficient,
               },
@@ -685,45 +724,54 @@ const CheckoutPage = () => {
                       </span>
                     )}
                   </div>
-                  <p className={`text-xs mt-0.5 ${opt.subRed ? "text-amber-500 font-medium" : "text-gray-400"}`}>
+                  <p
+                    className={`text-xs mt-0.5 ${opt.subRed ? "text-amber-500 font-medium" : "text-gray-400"}`}
+                  >
                     {opt.sub}
                   </p>
                 </div>
                 {/* Inline Top Up link when wallet is selected but insufficient */}
-                {opt.value === "wallet" && !walletSufficient && paymentMethod === "wallet" && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setShowTopUp(true);
-                    }}
-                    className="text-xs font-bold text-green-600 underline hover:text-green-700 whitespace-nowrap mt-1"
-                  >
-                    Top Up →
-                  </button>
-                )}
+                {opt.value === "wallet" &&
+                  !walletSufficient &&
+                  paymentMethod === "wallet" && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowTopUp(true);
+                      }}
+                      className="text-xs font-bold text-green-600 underline hover:text-green-700 whitespace-nowrap mt-1"
+                    >
+                      Top Up →
+                    </button>
+                  )}
               </label>
             ))}
           </div>
 
           {/* Insufficient wallet nudge */}
-          {paymentMethod === "wallet" && !walletSufficient && !walletLoading && (
-            <div className="mt-3 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
-              <span className="text-amber-500 mt-0.5">⚠️</span>
-              <div className="flex-1">
-                <p className="text-sm text-amber-700 font-medium">Wallet balance is insufficient</p>
-                <p className="text-xs text-amber-600 mt-0.5">
-                  Add at least ₹{walletShortfall.toLocaleString("en-IN")} to use wallet for this order.
-                </p>
+          {paymentMethod === "wallet" &&
+            !walletSufficient &&
+            !walletLoading && (
+              <div className="mt-3 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <span className="text-amber-500 mt-0.5">⚠️</span>
+                <div className="flex-1">
+                  <p className="text-sm text-amber-700 font-medium">
+                    Wallet balance is insufficient
+                  </p>
+                  <p className="text-xs text-amber-600 mt-0.5">
+                    Add at least ₹{walletShortfall.toLocaleString("en-IN")} to
+                    use wallet for this order.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowTopUp(true)}
+                  className="text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg transition whitespace-nowrap"
+                >
+                  + Add Funds
+                </button>
               </div>
-              <button
-                onClick={() => setShowTopUp(true)}
-                className="text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg transition whitespace-nowrap"
-              >
-                + Add Funds
-              </button>
-            </div>
-          )}
+            )}
         </div>
 
         {error && (
@@ -741,7 +789,8 @@ const CheckoutPage = () => {
             (paymentMethod === "wallet" && (!walletSufficient || walletLoading))
           }
           className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition ${
-            loading || (paymentMethod === "wallet" && (!walletSufficient || walletLoading))
+            loading ||
+            (paymentMethod === "wallet" && (!walletSufficient || walletLoading))
               ? "bg-gray-300 text-gray-500 cursor-not-allowed"
               : "bg-green-600 text-white hover:bg-green-700 active:scale-95"
           }`}
@@ -754,9 +803,11 @@ const CheckoutPage = () => {
           ) : paymentMethod === "cod" ? (
             `📦 ${t("placeOrder")} (COD)`
           ) : paymentMethod === "wallet" ? (
-            walletSufficient
-              ? `👛 Pay ₹${totalAmount.toLocaleString("en-IN")} with Wallet`
-              : "👛 Insufficient Balance"
+            walletSufficient ? (
+              `👛 Pay ₹${totalAmount.toLocaleString("en-IN")} with Wallet`
+            ) : (
+              "👛 Insufficient Balance"
+            )
           ) : (
             `💳 Pay ₹${totalAmount.toLocaleString("en-IN")}`
           )}

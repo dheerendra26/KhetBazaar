@@ -446,9 +446,6 @@ const sendOrderNotificationToFarmer = async ({
   }
 };
 
-/* ─────────────────────────────────────────────────────────
-   Exports
-───────────────────────────────────────────────────────── */
 module.exports = {
   sendMail,
   sendOTPEmail,

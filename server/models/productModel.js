@@ -12,8 +12,8 @@ const productSchema = mongoose.Schema({
   name: String,
   description: String,
   price: Number,
-  originalPrice: Number,          // for discount tracking
-  marketPrice: Number,            // typical market/mandi price for comparison
+  originalPrice: Number,
+  marketPrice: Number,
   discountPercent: { type: Number, default: 0 },
   email: String,
   location: String,
@@ -42,7 +42,7 @@ const productSchema = mongoose.Schema({
   ],
   isActive: { type: Boolean, default: true },
   deactivatedAt: { type: Date, default: null },
-  deactivatedBy: { type: String, default: null }, // admin email
+  deactivatedBy: { type: String, default: null },
 });
 
 module.exports = mongoose.model("product", productSchema);

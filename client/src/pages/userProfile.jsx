@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Package, MapPin, Phone, Mail, Calendar, IndianRupee, ShoppingBag } from "lucide-react";
+import {
+  Package,
+  MapPin,
+  Phone,
+  Mail,
+  Calendar,
+  IndianRupee,
+  ShoppingBag,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useLang } from "../context/LanguageContext";
 
@@ -51,7 +59,9 @@ function UserProfile() {
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || `API failed: ${response.status}`);
+          throw new Error(
+            errorData.message || `API failed: ${response.status}`,
+          );
         }
 
         const data = await response.json();
@@ -88,30 +98,25 @@ function UserProfile() {
     userData.role === 2
       ? "🚜 Farmer"
       : userData.role === 3
-      ? "🛒 Customer & Farmer"
-      : "🛒 Customer";
+        ? "🛒 Customer & Farmer"
+        : "🛒 Customer";
 
   const recentOrders = (userData.orders || []).slice(-3).reverse();
 
   const totalSpent = (userData.orders || []).reduce(
     (sum, order) => sum + (order.totalPrice || 0),
-    0
+    0,
   );
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-5xl mx-auto space-y-6">
-
-        {/* Header */}
         <div className="bg-green-600 text-white p-6 rounded-xl">
-          <h1 className="text-xl font-bold">
-            {userData.name || "User"}
-          </h1>
+          <h1 className="text-xl font-bold">{userData.name || "User"}</h1>
           <p>{roleLabel}</p>
           <p>{userData.email}</p>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
             <p className="font-bold">{userData.orders?.length || 0}</p>
@@ -127,7 +132,6 @@ function UserProfile() {
           </div>
         </div>
 
-        {/* Orders */}
         <div className="bg-white p-4 rounded-xl">
           <h2 className="font-bold mb-4">Recent Orders</h2>
 
