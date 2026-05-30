@@ -180,7 +180,6 @@ const WalletTopUpModal = ({ onClose, onSuccess, currentBalance, email }) => {
             </div>
 
             <div className="p-6">
-              {/* Current balance */}
               <div className="flex items-center gap-3 bg-green-50 border border-green-100 rounded-2xl px-4 py-3 mb-5">
                 <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-xl">
                   💰
@@ -203,7 +202,6 @@ const WalletTopUpModal = ({ onClose, onSuccess, currentBalance, email }) => {
                 )}
               </div>
 
-              {/* Preset amounts */}
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                 Quick Select
               </p>
@@ -223,7 +221,6 @@ const WalletTopUpModal = ({ onClose, onSuccess, currentBalance, email }) => {
                 ))}
               </div>
 
-              {/* Custom amount */}
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                 Custom Amount
               </p>
@@ -307,8 +304,6 @@ const CheckoutPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Delivery address — collected before payment, sent ONLY to farmer via email.
-  // Never stored publicly or returned from any API endpoint.
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [addressTouched, setAddressTouched] = useState(false);
   const addressValid = deliveryAddress.trim().length >= 10;
@@ -325,7 +320,6 @@ const CheckoutPage = () => {
         setWalletBalance(data.walletBalance ?? 0);
       }
     } catch {
-      /* silent — wallet will show ₹0 */
     } finally {
       setWalletLoading(false);
     }
@@ -354,7 +348,6 @@ const CheckoutPage = () => {
       sellerEmail: item.sellerEmail || item.email || "seller@khetbazaar.com",
     }));
 
-  // Gate: block payment if address not filled
   const checkAddress = () => {
     setAddressTouched(true);
     if (!addressValid) {
@@ -375,13 +368,11 @@ const CheckoutPage = () => {
         buyerEmail: email,
         items: buildOrderItems(),
         paymentMethod: method,
-        // Delivery address — sent to farmer via email only, never stored publicly
         buyerAddress: deliveryAddress.trim(),
       }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Order failed");
-    // Backend returns updated walletBalance for wallet payments — sync instantly
     if (method === "wallet" && data.walletBalance !== undefined) {
       setWalletBalance(data.walletBalance);
     }
@@ -390,7 +381,6 @@ const CheckoutPage = () => {
 
   const handlePlaceOrder = async () => {
     setError("");
-    // Always validate delivery address before any payment method
     if (!checkAddress()) return;
     setLoading(true);
     try {
@@ -410,7 +400,6 @@ const CheckoutPage = () => {
         localStorage.removeItem("cart");
         navigate("/orders", { state: { success: true, method: "wallet" } });
       } else {
-        // Razorpay
         const loaded = await loadRazorpay();
         if (!loaded) {
           setError("Razorpay SDK failed to load.");
@@ -432,9 +421,6 @@ const CheckoutPage = () => {
           description: "Fresh Farm Products",
           handler: async (response) => {
             try {
-              // Verify payment on backend — this saves the order AND sends
-              // confirmation emails to customer + farmer(s) with full contact
-              // details. Emails are sent ONLY after signature verification.
               const verifyRes = await fetch(
                 `${API}/payments/razorpay/verify-payment`,
                 {
@@ -446,7 +432,6 @@ const CheckoutPage = () => {
                     razorpay_signature: response.razorpay_signature,
                     buyerEmail: email,
                     items: buildOrderItems(),
-                    // Delivery address — passed to backend to include in farmer email only
                     buyerAddress: deliveryAddress.trim(),
                   }),
                 },
@@ -502,7 +487,6 @@ const CheckoutPage = () => {
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-green-700 mb-6">🧾 Checkout</h1>
 
-        {/* ── Order Summary ─────────────────────────────────── */}
         <div className="bg-white rounded-2xl shadow p-6 mb-5">
           <h2 className="font-bold text-gray-700 mb-4 text-lg">
             Order Summary
@@ -537,9 +521,6 @@ const CheckoutPage = () => {
           </div>
         </div>
 
-        {/* ── Delivery Address ─────────────────────────────── */}
-        {/* Address is collected here and sent ONLY to the farmer via email.
-           It is never stored in a public field or shown anywhere on the site. */}
         <div
           id="delivery-address"
           className="bg-white rounded-2xl shadow p-6 mb-5"
@@ -583,7 +564,6 @@ const CheckoutPage = () => {
           )}
         </div>
 
-        {/* ── Wallet Balance Card ───────────────────────────── */}
         <div
           className="rounded-2xl shadow-md p-5 mb-5 relative overflow-hidden"
           style={{
@@ -591,7 +571,6 @@ const CheckoutPage = () => {
               "linear-gradient(135deg,#14532d 0%,#166534 55%,#15803d 100%)",
           }}
         >
-          {/* Decorative circles */}
           <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white opacity-10 pointer-events-none" />
           <div className="absolute -bottom-10 -left-6 w-32 h-32 rounded-full bg-white opacity-10 pointer-events-none" />
 
@@ -622,7 +601,6 @@ const CheckoutPage = () => {
               </button>
             </div>
 
-            {/* Balance progress bar vs. order total */}
             {!walletLoading && totalAmount > 0 && (
               <div>
                 <div className="flex justify-between text-xs text-green-200 mb-1">
@@ -659,7 +637,6 @@ const CheckoutPage = () => {
           </div>
         </div>
 
-        {/* ── Payment Method ────────────────────────────────── */}
         <div className="bg-white rounded-2xl shadow p-6 mb-5">
           <h2 className="font-bold text-gray-700 mb-4 text-lg">
             💳 Payment Method
@@ -730,7 +707,6 @@ const CheckoutPage = () => {
                     {opt.sub}
                   </p>
                 </div>
-                {/* Inline Top Up link when wallet is selected but insufficient */}
                 {opt.value === "wallet" &&
                   !walletSufficient &&
                   paymentMethod === "wallet" && (
@@ -749,7 +725,6 @@ const CheckoutPage = () => {
             ))}
           </div>
 
-          {/* Insufficient wallet nudge */}
           {paymentMethod === "wallet" &&
             !walletSufficient &&
             !walletLoading && (
@@ -781,7 +756,6 @@ const CheckoutPage = () => {
           </div>
         )}
 
-        {/* ── Place Order button ────────────────────────────── */}
         <button
           onClick={handlePlaceOrder}
           disabled={
@@ -818,7 +792,6 @@ const CheckoutPage = () => {
         </p>
       </div>
 
-      {/* ── Wallet Top-Up Modal ───────────────────────────── */}
       {showTopUp && (
         <WalletTopUpModal
           email={email}

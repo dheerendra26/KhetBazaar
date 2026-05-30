@@ -18,7 +18,6 @@ const NotificationBell = () => {
       const res = await axios.post(`${API}/store/notifications`, { email });
       setNotifications(res.data.notifications || []);
     } catch {
-      /* silent */
     }
   };
 
@@ -34,7 +33,6 @@ const NotificationBell = () => {
       await axios.put(`${API}/store/notifications/read`, { email });
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     } catch {
-      /* silent */
     }
   };
 

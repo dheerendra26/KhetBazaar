@@ -1,20 +1,15 @@
-
 import { useLang } from "../context/LanguageContext";
 const PrivacyPolicy = () => {
   const { t } = useLang();
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white px-6 py-12">
       <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl p-10">
-
         <h1 className="text-4xl font-bold text-green-700 mb-6 text-center">
           KhetBazaar Privacy Policy & Terms
         </h1>
 
-        <p className="text-gray-600 mb-8 text-center">
-          Last Updated: 2026
-        </p>
+        <p className="text-gray-600 mb-8 text-center">Last Updated: 2026</p>
 
-        {/* Privacy Policy */}
         <section className="mb-8">
           <h2 className="text-2xl font-semibold text-green-700 mb-3">
             1. Privacy Policy
@@ -32,7 +27,6 @@ const PrivacyPolicy = () => {
           </p>
         </section>
 
-        {/* Platform Role */}
         <section className="mb-8">
           <h2 className="text-2xl font-semibold text-green-700 mb-3">
             2. Platform Role
@@ -40,12 +34,11 @@ const PrivacyPolicy = () => {
 
           <p className="text-gray-700">
             KhetBazaar acts only as a digital platform connecting farmers
-            (sellers) and customers (buyers). We do not own, produce, store,
-            or directly sell agricultural products listed on the platform.
+            (sellers) and customers (buyers). We do not own, produce, store, or
+            directly sell agricultural products listed on the platform.
           </p>
         </section>
 
-        {/* Customer Policy */}
         <section className="mb-8">
           <h2 className="text-2xl font-semibold text-green-700 mb-3">
             3. Customer Policy
@@ -71,7 +64,6 @@ const PrivacyPolicy = () => {
           </ul>
         </section>
 
-        {/* Farmer Policy */}
         <section className="mb-8">
           <h2 className="text-2xl font-semibold text-green-700 mb-3">
             4. Farmer / Seller Policy
@@ -82,9 +74,7 @@ const PrivacyPolicy = () => {
               Farmers are responsible for providing accurate product
               descriptions, pricing, and availability.
             </li>
-            <li>
-              Farmers must ensure product quality and timely delivery.
-            </li>
+            <li>Farmers must ensure product quality and timely delivery.</li>
             <li>
               If a customer raises complaints regarding the product,
               responsibility lies with the farmer.
@@ -96,7 +86,6 @@ const PrivacyPolicy = () => {
           </ul>
         </section>
 
-        {/* Payment Policy */}
         <section className="mb-8">
           <h2 className="text-2xl font-semibold text-green-700 mb-3">
             5. Payment Policy
@@ -123,7 +112,6 @@ const PrivacyPolicy = () => {
           </ul>
         </section>
 
-        {/* Refund Policy */}
         <section className="mb-8">
           <h2 className="text-2xl font-semibold text-green-700 mb-3">
             6. Return & Refund Policy
@@ -141,7 +129,6 @@ const PrivacyPolicy = () => {
           </p>
         </section>
 
-        {/* Liability Disclaimer */}
         <section>
           <h2 className="text-2xl font-semibold text-green-700 mb-3">
             7. Liability Disclaimer
@@ -153,7 +140,6 @@ const PrivacyPolicy = () => {
             facilitates communication and transactions between the two parties.
           </p>
         </section>
-
       </div>
     </div>
   );

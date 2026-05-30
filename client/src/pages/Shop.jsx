@@ -34,7 +34,7 @@ const Shop = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [error, setError] = useState("");
-  const [translatedNames, setTranslatedNames] = useState({}); // { [originalName]: hindiName }
+  const [translatedNames, setTranslatedNames] = useState({}); 
   const [filter, setFilter] = useState({
     price: "",
     minPrice: "",
@@ -50,7 +50,6 @@ const Shop = () => {
   const { t, lang } = useLang();
   const navigate = useNavigate();
 
-  // Get GPS location on mount
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) =>
@@ -62,7 +61,6 @@ const Shop = () => {
     );
   }, []);
 
-  // Batch-translate product names when lang switches to Hindi
   useEffect(() => {
     if (lang !== "hi" || products.length === 0) {
       setTranslatedNames({});
@@ -224,7 +222,6 @@ const Shop = () => {
           </div> */}
         </div>
 
-        {/* Category pills */}
         <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
           {["all", "vegetable", "fruit", "dairy", "seeds"].map((cat) => (
             <button
@@ -250,7 +247,6 @@ const Shop = () => {
           ))}
         </div>
 
-        {/* Advanced Filters */}
         <div className="bg-white rounded-xl shadow p-4 mb-6">
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-32">
@@ -336,7 +332,6 @@ const Shop = () => {
 
         {error && <div className="text-red-500 text-center py-4">{error}</div>}
 
-        {/* Products Grid */}
         {filteredProducts.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-xl">
             <p className="text-5xl mb-3">🌾</p>
@@ -365,7 +360,6 @@ const Shop = () => {
                   key={product._id}
                   className={`bg-white rounded-xl shadow hover:shadow-lg transition-all relative flex flex-col overflow-hidden ${isOut ? "opacity-70" : ""}`}
                 >
-                  {/* Badges row */}
                   <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
                     {isOut && (
                       <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">
@@ -391,7 +385,6 @@ const Shop = () => {
                     )}
                   </div>
 
-                  {/* Image */}
                   <div className="h-44 bg-gray-100">
                     <img
                       src={product.images?.[0] || ""}
@@ -401,20 +394,17 @@ const Shop = () => {
                     />
                   </div>
 
-                  {/* Content */}
                   <div className="p-3 flex flex-col flex-1">
                     <h2 className="font-semibold text-gray-800 text-sm leading-tight">
                       {tn(product.name)}
                     </h2>
 
-                    {/* Direct from Farmer tag */}
                     <div className="mt-1.5">
                       <span className="inline-flex items-center gap-1 bg-green-50 border border-green-200 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">
                         🌾 Direct from Farmer
                       </span>
                     </div>
 
-                    {/* Star rating */}
                     {product.totalRatings > 0 && (
                       <div className="mt-1">
                         <StarRating rating={product.averageRating} />
@@ -433,7 +423,6 @@ const Shop = () => {
                           : product.location || "Nearby"}
                     </p>
 
-                    {/* Farmer Price vs Market Price */}
                     <div className="mt-2 bg-green-50 border border-green-100 rounded-lg p-2">
                       <div className="flex items-baseline gap-1">
                         <span className="text-green-700 font-bold text-sm">

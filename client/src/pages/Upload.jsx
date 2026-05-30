@@ -29,32 +29,24 @@ const Upload = () => {
     isOrganic: false,
   });
 
-  // ── State ─────────────────────────────────────────────────────────────────
-  const [mandiData, setMandiData]           = useState(null);
-  const [mandiLoading, setMandiLoading]     = useState(false);
-  const [mandiError, setMandiError]         = useState("");
-  const [nameError, setNameError]           = useState("");
-  // Category resolution from the client-side mapper
-  const [categoryHint, setCategoryHint]     = useState(null); // { canonical, category, confidence }
-  const debounceRef                         = useRef(null);
-  const mandiDebounceRef                    = useRef(null);
-  const translateDebounceRef                = useRef(null);
-  const [hindiName, setHindiName]           = useState(""); // live Hindi translation of product name
-  const [hindiCategory, setHindiCategory]   = useState(""); // translated category label
+  const [mandiData, setMandiData] = useState(null);
+  const [mandiLoading, setMandiLoading] = useState(false);
+  const [mandiError, setMandiError] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [categoryHint, setCategoryHint] = useState(null);
+  const debounceRef = useRef(null);
+  const mandiDebounceRef = useRef(null);
+  const translateDebounceRef = useRef(null);
+  const [hindiName, setHindiName] = useState("");
+  const [hindiCategory, setHindiCategory] = useState("");
   const [translateLoading, setTranslateLoading] = useState(false);
 
-  // Keep email in sync if auth loads after mount
   useEffect(() => {
     if (loggedInEmail) {
-      setFormData(prev => ({ ...prev, email: loggedInEmail }));
+      setFormData((prev) => ({ ...prev, email: loggedInEmail }));
     }
   }, [loggedInEmail]);
 
-  // ── Live mandi price fetch ────────────────────────────────────────────────
-  // Always resolves the user's input to a canonical English name BEFORE
-  // calling the API, so "aloo" → "Potato", "mirchi" → "Green Chilli", etc.
-  // This prevents the API falling back to the default ₹35 baseline for
-  // perfectly valid Hindi / regional product names.
   const fetchMandiPrice = (productName) => {
     clearTimeout(mandiDebounceRef.current);
     if (!productName || productName.trim().length < 3) {
@@ -66,35 +58,33 @@ const Upload = () => {
       setMandiLoading(true);
       setMandiError("");
       try {
-        // Resolve synonym on the client before sending to the API so the
-        // backend receives a canonical English name it can look up in DB/ML.
-        const resolved   = resolveCategory(productName.trim());
-        // Use canonical if we got a confident match, otherwise send raw input.
-        const queryName  =
+        const resolved = resolveCategory(productName.trim());
+        const queryName =
           resolved.confidence !== "default"
-            ? resolved.canonical   // e.g. "Potato", "Green Chilli", "Milk"
-            : productName.trim();  // unknown crop — let backend try its own resolution
+            ? resolved.canonical
+            : productName.trim();
 
         const res = await axios.get(`${API}/products/predict-price`, {
           params: { cropName: queryName },
         });
         setMandiData(res.data);
         if (res.data?.predictedRange?.avg) {
-          setFormData(prev => ({ ...prev, marketPrice: res.data.predictedRange.avg }));
+          setFormData((prev) => ({
+            ...prev,
+            marketPrice: res.data.predictedRange.avg,
+          }));
         }
       } catch {
         setMandiData(null);
-        setMandiError("Could not fetch mandi price. You can enter it manually.");
+        setMandiError(
+          "Could not fetch mandi price. You can enter it manually.",
+        );
       } finally {
         setMandiLoading(false);
       }
     }, 800);
   };
 
-  // ── Live Hindi translation fetch ────────────────────────────────────────────
-  // Translates the entered product name (and auto-detected category) to Hindi
-  // using the backend /api/translate endpoint (Google Translate → MyMemory fallback).
-  // Only fires when the app language is Hindi; no-ops in English mode.
   const fetchHindiTranslation = (productName, category) => {
     clearTimeout(translateDebounceRef.current);
     if (!productName || productName.trim().length < 2) {
@@ -105,8 +95,6 @@ const Upload = () => {
     translateDebounceRef.current = setTimeout(async () => {
       setTranslateLoading(true);
       try {
-        // Always translate to Hindi regardless of UI language so the
-        // Sell page always shows the Hindi name as a helper label.
         const [nameHi, catHi] = await Promise.all([
           translateOne(productName.trim(), "hi"),
           category ? translateOne(category, "hi") : Promise.resolve(""),
@@ -122,36 +110,31 @@ const Upload = () => {
     }, 700);
   };
 
-    // ── Main change handler ───────────────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value } = e.target;
 
     if (name === "name") {
-      // 1. Required validation
       setNameError(value.trim() ? "" : "Product name is required.");
 
-      // 2. Instant client-side category resolution (zero latency)
       if (value.trim().length >= 2) {
         clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
           const resolved = resolveCategory(value.trim());
           setCategoryHint(resolved);
-          // Auto-update the category dropdown if we have a confident match
           if (resolved.confidence !== "default") {
-            setFormData(prev => ({ ...prev, category: resolved.category }));
+            setFormData((prev) => ({ ...prev, category: resolved.category }));
           }
-        }, 300); // very short debounce — just avoids per-keystroke churn
+        }, 300);
       } else {
         setCategoryHint(null);
       }
 
-      // 3. Mandi price fetch (slower, needs network)
       fetchMandiPrice(value);
 
-      // 4. Hindi translation (always-on helper, regardless of UI language)
-      const resolvedCatLabel = resolveCategory(value.trim()).confidence !== "default"
-        ? resolveCategory(value.trim()).canonical
-        : value.trim();
+      const resolvedCatLabel =
+        resolveCategory(value.trim()).confidence !== "default"
+          ? resolveCategory(value.trim()).canonical
+          : value.trim();
       fetchHindiTranslation(value, resolvedCatLabel);
     }
 
@@ -178,12 +161,12 @@ const Upload = () => {
   const getLocation = () =>
     new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        reject
+        (pos) =>
+          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        reject,
       );
     });
 
-  // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
@@ -193,23 +176,36 @@ const Upload = () => {
 
     try {
       let coords = { lat: null, lng: null };
-      try { coords = await getLocation(); } catch { /* GPS optional */ }
+      try {
+        coords = await getLocation();
+      } catch {}
 
       await axios.post(`${API}/products/post`, {
         ...formData,
         lat: coords.lat,
         lng: coords.lng,
         isOrganic: formData.isOrganic || false,
-        marketPrice: formData.marketPrice ? Number(formData.marketPrice) : undefined,
+        marketPrice: formData.marketPrice
+          ? Number(formData.marketPrice)
+          : undefined,
       });
 
       alert("✅ Product uploaded successfully!");
 
       setFormData({
-        name: "", description: "", price: "", marketPrice: "",
-        email: loggedInEmail, location: "", images: [""],
-        lat: null, lng: null, unit: "kg", category: "vegetable",
-        stock: 10, isOrganic: false,
+        name: "",
+        description: "",
+        price: "",
+        marketPrice: "",
+        email: loggedInEmail,
+        location: "",
+        images: [""],
+        lat: null,
+        lng: null,
+        unit: "kg",
+        category: "vegetable",
+        stock: 10,
+        isOrganic: false,
       });
       setMandiData(null);
       setMandiError("");
@@ -222,17 +218,17 @@ const Upload = () => {
     }
   };
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
   const trendColour = (trend = "") =>
-    trend.includes("Rising") ? "text-red-600"
-    : trend.includes("Falling") ? "text-blue-600"
-    : "text-gray-600";
+    trend.includes("Rising")
+      ? "text-red-600"
+      : trend.includes("Falling")
+        ? "text-blue-600"
+        : "text-gray-600";
 
-  const catInfo = CATEGORY_LABELS[formData.category] || CATEGORY_LABELS.vegetable;
+  const catInfo =
+    CATEGORY_LABELS[formData.category] || CATEGORY_LABELS.vegetable;
   const hintInfo = categoryHint ? CATEGORY_LABELS[categoryHint.category] : null;
 
-  // Show the category hint banner when the resolved category differs from what
-  // is currently selected (so the farmer knows it was auto-changed)
   const showCategoryChanged =
     categoryHint &&
     categoryHint.confidence !== "default" &&
@@ -240,8 +236,6 @@ const Upload = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-green-100 via-blue-50 to-yellow-50 px-4 py-10">
-
-      {/* Predict Price Banner */}
       <div className="w-full max-w-lg mb-4">
         <Link
           to="/mandi-insights"
@@ -249,20 +243,23 @@ const Upload = () => {
         >
           <div>
             <p className="font-bold text-sm">🔮 Not sure about pricing?</p>
-            <p className="text-xs text-green-100">Use AI Crop Price Predictor before listing</p>
+            <p className="text-xs text-green-100">
+              Use AI Crop Price Predictor before listing
+            </p>
           </div>
           <span className="text-xl">→</span>
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-lg w-full max-w-lg">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-8 rounded-xl shadow-lg w-full max-w-lg"
+      >
         <h2 className="text-3xl font-bold text-center text-green-600 mb-6">
           Upload Product 🌾
         </h2>
 
         <div className="space-y-4">
-
-          {/* ── PRODUCT NAME ── */}
           <div>
             <label className="text-xs text-gray-500 font-medium block mb-1">
               Product Name <span className="text-red-500">*</span>
@@ -282,46 +279,59 @@ const Upload = () => {
                   : "border-gray-300 focus:ring-green-400"
               }`}
             />
-            {nameError && <p className="text-xs text-red-500 mt-1">{nameError}</p>}
-
-            {/* ── CATEGORY AUTO-RESOLVE BADGE ── */}
-            {categoryHint && categoryHint.confidence !== "default" && hintInfo && (
-              <div className={`mt-2 flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${hintInfo.color}`}>
-                <span className="text-base">{hintInfo.emoji}</span>
-                <div className="flex-1">
-                  <span className="font-semibold">
-                    Recognised as "{categoryHint.canonical}"
-                  </span>
-                  {showCategoryChanged && (
-                    <span className="ml-1 text-xs">
-                      → Category auto-set to <strong>{hintInfo.label}</strong>
-                    </span>
-                  )}
-                </div>
-                <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${
-                  categoryHint.confidence === "exact"   ? "bg-green-200 border-green-400 text-green-800"
-                  : categoryHint.confidence === "synonym" ? "bg-blue-200 border-blue-400 text-blue-800"
-                  : "bg-yellow-200 border-yellow-400 text-yellow-800"
-                }`}>
-                  {categoryHint.confidence}
-                </span>
-              </div>
+            {nameError && (
+              <p className="text-xs text-red-500 mt-1">{nameError}</p>
             )}
 
+            {categoryHint &&
+              categoryHint.confidence !== "default" &&
+              hintInfo && (
+                <div
+                  className={`mt-2 flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${hintInfo.color}`}
+                >
+                  <span className="text-base">{hintInfo.emoji}</span>
+                  <div className="flex-1">
+                    <span className="font-semibold">
+                      Recognised as "{categoryHint.canonical}"
+                    </span>
+                    {showCategoryChanged && (
+                      <span className="ml-1 text-xs">
+                        → Category auto-set to <strong>{hintInfo.label}</strong>
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${
+                      categoryHint.confidence === "exact"
+                        ? "bg-green-200 border-green-400 text-green-800"
+                        : categoryHint.confidence === "synonym"
+                          ? "bg-blue-200 border-blue-400 text-blue-800"
+                          : "bg-yellow-200 border-yellow-400 text-yellow-800"
+                    }`}
+                  >
+                    {categoryHint.confidence}
+                  </span>
+                </div>
+              )}
 
-            {/* ── HINDI TRANSLATION BADGE ── */}
             {(hindiName || translateLoading) && (
               <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg border border-orange-200 bg-orange-50 text-sm text-orange-800">
                 <span className="text-base">🇮🇳</span>
                 <div className="flex-1">
                   {translateLoading ? (
-                    <span className="animate-pulse text-xs text-gray-500">हिंदी अनुवाद हो रहा है…</span>
+                    <span className="animate-pulse text-xs text-gray-500">
+                      हिंदी अनुवाद हो रहा है…
+                    </span>
                   ) : (
                     <>
-                      <span className="text-xs text-gray-500 mr-1">हिंदी में:</span>
+                      <span className="text-xs text-gray-500 mr-1">
+                        हिंदी में:
+                      </span>
                       <span className="font-semibold">{hindiName}</span>
                       {hindiCategory && hindiCategory !== hindiName && (
-                        <span className="ml-2 text-xs text-orange-600">({hindiCategory})</span>
+                        <span className="ml-2 text-xs text-orange-600">
+                          ({hindiCategory})
+                        </span>
                       )}
                     </>
                   )}
@@ -332,7 +342,6 @@ const Upload = () => {
               </div>
             )}
 
-            {/* ── MANDI PRICE LIVE CARD ── */}
             {mandiLoading && (
               <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 animate-pulse">
                 <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" />
@@ -351,28 +360,39 @@ const Upload = () => {
                 <div className="flex flex-wrap gap-3 items-baseline">
                   <span className="text-lg font-bold text-green-700">
                     ₹{mandiData.predictedRange.avg}
-                    <span className="text-xs font-normal text-gray-500">/kg avg</span>
+                    <span className="text-xs font-normal text-gray-500">
+                      /kg avg
+                    </span>
                   </span>
                   <span className="text-xs text-gray-500">
-                    Range: ₹{mandiData.predictedRange.min}–₹{mandiData.predictedRange.max}
+                    Range: ₹{mandiData.predictedRange.min}–₹
+                    {mandiData.predictedRange.max}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-1 text-xs">
-                  <span className={`font-medium ${trendColour(mandiData.trend)}`}>
+                  <span
+                    className={`font-medium ${trendColour(mandiData.trend)}`}
+                  >
                     {mandiData.trend}
                   </span>
                   <span className="text-gray-400">•</span>
                   <span className="text-gray-500">{mandiData.season}</span>
                   <span className="text-gray-400">•</span>
-                  <span className={`font-medium ${
-                    mandiData.confidence === "High" ? "text-green-600"
-                    : mandiData.confidence?.startsWith("Medium") ? "text-yellow-600"
-                    : "text-red-500"
-                  }`}>
+                  <span
+                    className={`font-medium ${
+                      mandiData.confidence === "High"
+                        ? "text-green-600"
+                        : mandiData.confidence?.startsWith("Medium")
+                          ? "text-yellow-600"
+                          : "text-red-500"
+                    }`}
+                  >
                     {mandiData.confidence} confidence
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 mt-1 italic">Source: {mandiData.basedOn}</p>
+                <p className="text-xs text-gray-400 mt-1 italic">
+                  Source: {mandiData.basedOn}
+                </p>
                 <p className="text-xs text-blue-600 mt-1.5 font-medium">
                   ✅ Market price auto-filled below — adjust if needed.
                 </p>
@@ -384,7 +404,6 @@ const Upload = () => {
             )}
           </div>
 
-          {/* ── DESCRIPTION ── */}
           <textarea
             name="description"
             value={formData.description}
@@ -394,7 +413,6 @@ const Upload = () => {
             className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
           />
 
-          {/* ── FARMER PRICE ── */}
           <div>
             <label className="text-xs text-gray-500 font-medium block mb-1">
               Your Farmer Price (₹) <span className="text-red-500">*</span>
@@ -409,14 +427,17 @@ const Upload = () => {
               min="1"
               className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
             />
-            {mandiData && formData.price && Number(formData.price) < mandiData.predictedRange.avg && (
-              <p className="text-xs text-green-700 mt-1 font-medium">
-                💡 Your price is ₹{Math.round(mandiData.predictedRange.avg - formData.price)} below today's mandi average — great deal for buyers!
-              </p>
-            )}
+            {mandiData &&
+              formData.price &&
+              Number(formData.price) < mandiData.predictedRange.avg && (
+                <p className="text-xs text-green-700 mt-1 font-medium">
+                  💡 Your price is ₹
+                  {Math.round(mandiData.predictedRange.avg - formData.price)}{" "}
+                  below today's mandi average — great deal for buyers!
+                </p>
+              )}
           </div>
 
-          {/* ── MARKET / MANDI PRICE (auto-filled) ── */}
           <div>
             <label className="text-xs text-gray-500 font-medium block mb-1">
               Market / Mandi Price (₹)
@@ -434,14 +455,16 @@ const Upload = () => {
               placeholder="Typical market price (shows savings to buyer)"
               className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
             />
-            {formData.marketPrice && formData.price && formData.marketPrice > formData.price && (
-              <p className="text-xs text-green-600 mt-1 font-medium">
-                ✅ Buyers save ₹{formData.marketPrice - formData.price} per {formData.unit || "kg"} — this will be shown on your product!
-              </p>
-            )}
+            {formData.marketPrice &&
+              formData.price &&
+              formData.marketPrice > formData.price && (
+                <p className="text-xs text-green-600 mt-1 font-medium">
+                  ✅ Buyers save ₹{formData.marketPrice - formData.price} per{" "}
+                  {formData.unit || "kg"} — this will be shown on your product!
+                </p>
+              )}
           </div>
 
-          {/* ── STOCK ── */}
           <input
             type="number"
             name="stock"
@@ -453,14 +476,16 @@ const Upload = () => {
             className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
           />
 
-          {/* ── EMAIL (auto-filled) ── */}
           <div className="w-full border p-3 rounded-lg bg-green-50 border-green-200 flex items-center gap-2">
             <span className="text-green-600 text-sm">📧</span>
-            <span className="text-gray-700 text-sm flex-1">{formData.email}</span>
-            <span className="text-xs text-green-600 font-medium bg-green-100 px-2 py-0.5 rounded-full">Auto-filled</span>
+            <span className="text-gray-700 text-sm flex-1">
+              {formData.email}
+            </span>
+            <span className="text-xs text-green-600 font-medium bg-green-100 px-2 py-0.5 rounded-full">
+              Auto-filled
+            </span>
           </div>
 
-          {/* ── CATEGORY (auto-set, still overrideable) ── */}
           <div>
             <label className="text-xs text-gray-500 font-medium block mb-1 flex items-center gap-1">
               Category
@@ -485,7 +510,6 @@ const Upload = () => {
             </div>
           </div>
 
-          {/* ── UNIT ── */}
           <select
             name="unit"
             value={formData.unit}
@@ -498,21 +522,21 @@ const Upload = () => {
             <option value="litre">Per Litre</option>
           </select>
 
-          {/* ── ORGANIC ── */}
           <div className="flex gap-6">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 name="isOrganic"
                 checked={formData.isOrganic || false}
-                onChange={(e) => setFormData(p => ({ ...p, isOrganic: e.target.checked }))}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, isOrganic: e.target.checked }))
+                }
                 className="accent-green-600 w-4 h-4"
               />
               <span className="text-sm font-medium">🌿 Organic Product</span>
             </label>
           </div>
 
-          {/* ── IMAGES ── */}
           <div>
             {formData.images.map((img, index) => (
               <input
@@ -525,14 +549,17 @@ const Upload = () => {
               />
             ))}
             {formData.images.length < 4 && (
-              <button type="button" onClick={addImageField} className="text-green-600 font-medium text-sm">
+              <button
+                type="button"
+                onClick={addImageField}
+                className="text-green-600 font-medium text-sm"
+              >
                 + Add Another Image
               </button>
             )}
           </div>
         </div>
 
-        {/* ── SUBMIT ── */}
         <button
           type="submit"
           className="w-full mt-6 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition font-semibold"

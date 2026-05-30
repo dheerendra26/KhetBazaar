@@ -98,7 +98,6 @@ const ProductDetail = () => {
     fetchData();
   }, [id]);
 
-  // Sync cartQty from localStorage whenever product loads or cart changes
   useEffect(() => {
     if (!product) return;
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
@@ -136,15 +135,12 @@ const ProductDetail = () => {
     });
   }, [product]);
 
-  // FIX: Use stock > 0 as the minimum cap guard — never allow qty if stock is 0
   const handleQuantityChange = (newQty) => {
     if (!product || product.stock <= 0) return;
-    // Remaining units available = stock - already-in-cart qty
     const maxAllowed = Math.max(0, product.stock - cartQty);
     setQuantity(Math.min(maxAllowed, Math.max(1, newQty)));
   };
 
-  // FIX: Guard out-of-stock, cap total cart qty to stock, never allow negative
   const addToCart = () => {
     if (!product || product.stock <= 0) return;
 
@@ -152,11 +148,9 @@ const ProductDetail = () => {
     const index = cart.findIndex((item) => item._id === product._id);
 
     if (index !== -1) {
-      // Product already in cart — increase qty but cap at stock
       const newQty = Math.min(product.stock, cart[index].quantity + quantity);
       cart[index].quantity = Math.max(1, newQty); // never go below 1
     } else {
-      // New cart entry — qty capped to stock
       const clampedQty = Math.min(product.stock, Math.max(1, quantity));
       cart.push({
         _id: product._id,
@@ -171,11 +165,9 @@ const ProductDetail = () => {
 
     localStorage.setItem("cart", JSON.stringify(cart));
 
-    // Update local cartQty state
     const updated = cart.find((item) => item._id === product._id);
     setCartQty(updated ? updated.quantity : 0);
 
-    // Reset the selector quantity back to 1
     setQuantity(1);
     setCartAdded(true);
     setTimeout(() => setCartAdded(false), 2000);
@@ -223,12 +215,9 @@ const ProductDetail = () => {
       </div>
     );
 
-  const images = product.images?.length
-    ? product.images
-    : [""];
+  const images = product.images?.length ? product.images : [""];
   const hasDiscount = product.discountPercent > 0;
   const isOutOfStock = product.stock <= 0;
-  // Remaining stock available to add to cart
   const remainingStock = Math.max(0, product.stock - cartQty);
   const isAtMaxStock = cartQty >= product.stock;
 
@@ -237,15 +226,12 @@ const ProductDetail = () => {
       <div className="max-w-5xl mx-auto">
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="md:flex">
-            {/* Image slider */}
             <div className="md:w-1/2">
               <div className="relative h-80 md:h-full min-h-64 bg-gray-100">
                 <img
                   src={images[currentIndex]}
                   alt={product.name}
-                  onError={(e) =>
-                    (e.target.src = "")
-                  }
+                  onError={(e) => (e.target.src = "")}
                   className="w-full h-full object-cover"
                 />
                 {images.length > 1 && (
@@ -280,7 +266,6 @@ const ProductDetail = () => {
                     </div>
                   </>
                 )}
-                {/* Badges */}
                 <div className="absolute top-3 left-3 flex flex-col gap-1.5">
                   {product.isOrganic && (
                     <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
@@ -294,7 +279,6 @@ const ProductDetail = () => {
                   )}
                 </div>
               </div>
-              {/* Thumbnail strip */}
               {images.length > 1 && (
                 <div className="flex gap-2 p-3 overflow-x-auto">
                   {images.map((img, i) => (
@@ -310,7 +294,6 @@ const ProductDetail = () => {
               )}
             </div>
 
-            {/* Details */}
             <div className="md:w-1/2 p-6 flex flex-col justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
@@ -331,7 +314,6 @@ const ProductDetail = () => {
                 )}
 
                 <div className="bg-gray-50 rounded-xl p-4 mt-4 space-y-1">
-                  {/* <p className="text-sm"><span className="text-gray-500">Location:</span> <span className="font-medium">{product.location}</span></p> */}
                   <p className="text-sm">
                     <span className="text-gray-500">Seller:</span>{" "}
                     <span className="font-medium">{product.email}</span>
@@ -344,7 +326,6 @@ const ProductDetail = () => {
                   </p>
                 </div>
 
-                {/* Price */}
                 <div className="mt-4">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="inline-flex items-center gap-1.5 bg-green-600 text-white text-sm px-3 py-1 rounded-full font-semibold shadow-sm">
@@ -378,7 +359,10 @@ const ProductDetail = () => {
                             Market Price
                           </p>
                           <span className="text-xl text-gray-400 line-through font-semibold">
-                            ₹{roundToTwo( product.marketPrice || product.originalPrice)}
+                            ₹
+                            {roundToTwo(
+                              product.marketPrice || product.originalPrice,
+                            )}
                           </span>
                         </div>
                       ) : null}
@@ -389,8 +373,10 @@ const ProductDetail = () => {
                       <div className="mt-2 flex items-center gap-2">
                         <span className="bg-orange-100 text-orange-700 font-bold text-sm px-3 py-1 rounded-full">
                           💚 You save ₹
-                          { roundToTwo( (product.marketPrice || product.originalPrice) -
-                            product.price)}{" "}
+                          {roundToTwo(
+                            (product.marketPrice || product.originalPrice) -
+                              product.price,
+                          )}{" "}
                           per {product.unit || "kg"}
                         </span>
                         {hasDiscount && product.discountPercent > 0 && (
@@ -407,7 +393,6 @@ const ProductDetail = () => {
                   </div>
                 </div>
 
-                {/* Stock */}
                 <div className="mt-3">
                   {isOutOfStock ? (
                     <span className="bg-red-100 text-red-600 text-sm font-semibold px-3 py-1.5 rounded-full">
@@ -424,7 +409,6 @@ const ProductDetail = () => {
                   )}
                 </div>
 
-                {/* FIX: Show how many are already in cart */}
                 {cartQty > 0 && (
                   <p className="mt-2 text-sm text-blue-600 font-medium">
                     🛒 {cartQty} {cartQty === 1 ? "unit" : "units"} already in
@@ -438,10 +422,8 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {/* Qty + Cart */}
               <div className="mt-6">
                 <div className="flex items-center gap-4">
-                  {/* FIX: Disable +/- controls when out of stock or max stock reached */}
                   <div
                     className={`flex items-center bg-gray-100 rounded-xl px-3 py-1 ${isOutOfStock || isAtMaxStock ? "opacity-50" : ""}`}
                   >
@@ -491,7 +473,6 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* Tabs: Reviews & Comments */}
           <div className="border-t border-gray-100">
             <div className="flex border-b border-gray-100">
               {["reviews", "comments"].map((tab) => (

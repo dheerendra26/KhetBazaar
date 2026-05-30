@@ -9,18 +9,21 @@ const STATUS_STEPS = ["placed", "packed", "out_for_delivery", "delivered"];
 const STATUS_LABELS = {
   placed: { label: "Order Placed", icon: "📦", color: "bg-gray-400" },
   packed: { label: "Packed", icon: "🗃️", color: "bg-yellow-400" },
-  out_for_delivery: { label: "Out for Delivery", icon: "🚚", color: "bg-blue-400" },
+  out_for_delivery: {
+    label: "Out for Delivery",
+    icon: "🚚",
+    color: "bg-blue-400",
+  },
   delivered: { label: "Delivered", icon: "✅", color: "bg-green-500" },
 };
 
-// ✅ FIXED INVOICE FUNCTION
 const generateInvoiceHTML = (order, userEmail, t) => {
   const paymentLabel =
     order.paymentMethod === "cod"
       ? t("cashOnDeliveryShort")
       : order.paymentMethod === "wallet"
-      ? t("walletShort")
-      : t("onlineShort");
+        ? t("walletShort")
+        : t("onlineShort");
 
   return `
 <!DOCTYPE html>
@@ -121,13 +124,10 @@ const OrderHistory = () => {
 
             return (
               <div key={i} className="bg-white p-4 mb-4 rounded shadow">
-                
                 {/* HEADER */}
                 <div
                   className="cursor-pointer"
-                  onClick={() =>
-                    setExpandedOrder(isExpanded ? null : i)
-                  }
+                  onClick={() => setExpandedOrder(isExpanded ? null : i)}
                 >
                   <p className="font-bold">{order.productName}</p>
 
@@ -136,17 +136,16 @@ const OrderHistory = () => {
                     {new Date(order.orderDate).toLocaleDateString("en-IN")}
                   </p>
 
-                  {/* ✅ FIXED PAYMENT LINE */}
                   <p className="text-sm text-gray-400">
-                    Payment: {order.paymentMethod === "cod"
+                    Payment:{" "}
+                    {order.paymentMethod === "cod"
                       ? t("cashOnDeliveryShort")
                       : order.paymentMethod === "wallet"
-                      ? t("walletShort")
-                      : t("onlineShort")}
+                        ? t("walletShort")
+                        : t("onlineShort")}
                   </p>
                 </div>
 
-                {/* EXPANDED */}
                 {isExpanded && (
                   <div className="mt-3 border-t pt-3">
                     <p>Qty: {order.quantity}</p>
