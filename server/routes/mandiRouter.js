@@ -7,6 +7,7 @@ const {
   predictPrice,
   profitComparison,
   productProfitComparison,
+  refreshAll
 } = require("../controllers/mandiController");
 
 const {
@@ -21,17 +22,7 @@ const { runMandiRefresh } = require("../utils/mandiScheduler");
 router.get("/fetch", fetchAndStoreMandi);
 router.get("/prices", getMandiPrices);
 
-router.post("/refresh-all", async (req, res) => {
-  try {
-    res.json({
-      message:
-        "Mandi price refresh started for all crops. Check server logs for progress.",
-    });
-    await runMandiRefresh();
-  } catch (err) {
-    console.error("[MandiRouter] refresh-all error:", err.message);
-  }
-});
+router.post("/refresh-all", refreshAll);
 
 router.post("/predict-price", predictPrice);
 router.post("/profit-comparison", profitComparison);

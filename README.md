@@ -125,7 +125,7 @@ Node.js /mandi/fetch  →  MongoDB (MandiPrice collection)
 cd flask-ml
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-MONGO_URI=your_mongo_uri python app.py
+python app.py
 ```
 
 **2. Seed mandi data + train model**
@@ -137,13 +137,7 @@ node seed-mandi.js
 **3. Add to server `.env`**
 ```
 FLASK_URL=http://localhost:5001
-GOV_API_KEY=579b464db66ec23bdd000001cdd3946e44ce4aad38534209a5a3c9d0
+GOV_API_KEY=YOUR_GOV_API_Key
 ```
 
 **4. Visit `/mandi-insights` in the React app**
-
-### Or use Docker Compose
-```bash
-docker-compose up --build
-```
-

@@ -645,3 +645,15 @@ exports.profitComparison = async (req, res) => {
       .json({ message: "Profit comparison failed", error: err.message });
   }
 };
+
+exports.refreshAll = async (req, res) => {
+  try {
+    res.json({
+      message:
+        "Mandi price refresh started for all crops. Check server logs for progress.",
+    });
+    await runMandiRefresh();
+  } catch (err) {
+    console.error("[MandiRouter] refresh-all error:", err.message);
+  }
+};
