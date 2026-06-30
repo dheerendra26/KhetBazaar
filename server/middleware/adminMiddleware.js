@@ -1,4 +1,4 @@
-function requireAdmin(req, res, next) {
+const requireAdmin = (req, res, next) => {
   if (!req.user || req.user.role !== 4) {
     return res.status(403).json({
       message: "Forbidden: Admins only",
@@ -6,7 +6,7 @@ function requireAdmin(req, res, next) {
   }
 
   next();
-}
+};
 
 module.exports = {
   requireAdmin,

@@ -544,7 +544,7 @@ async function buildDairyTimeline(item) {
   };
 }
 
-exports.getMarketIntelligence = async (req, res) => {
+const getMarketIntelligence = async (req, res) => {
   try {
     const category = (req.query.category || "vegetables").toLowerCase();
     const cropsParam = req.query.crops;
@@ -576,7 +576,7 @@ exports.getMarketIntelligence = async (req, res) => {
   }
 };
 
-exports.getMarketPrices = async (req, res) => {
+const getMarketPrices = async (req, res) => {
   try {
     const category = (req.query.category || "vegetables").toLowerCase();
     const cropsParam = req.query.crops;
@@ -620,7 +620,7 @@ exports.getMarketPrices = async (req, res) => {
   }
 };
 
-exports.getDairyPrices = async (req, res) => {
+const getDairyPrices = async (req, res) => {
   try {
     await ensureDairyMRP();
     const results = await Promise.all(DAIRY_MRP.map(buildDairyTimeline));
@@ -632,7 +632,7 @@ exports.getDairyPrices = async (req, res) => {
   }
 };
 
-exports.getCatalogue = (req, res) => {
+const getCatalogue = (req, res) => {
   res.json({
     categories: {
       vegetables: {
@@ -654,3 +654,10 @@ exports.getCatalogue = (req, res) => {
     },
   });
 };
+
+module.exports = {
+  getCatalogue,
+  getDairyPrices,
+  getMarketPrices,
+  getMarketIntelligence,
+}

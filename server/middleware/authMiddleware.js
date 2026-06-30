@@ -4,7 +4,7 @@ if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
 
-module.exports.authenticateUser = async function (req, res, next) {
+const authenticateUser = async function (req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -35,4 +35,8 @@ module.exports.authenticateUser = async function (req, res, next) {
   } catch (err) {
     res.status(401).json({ message: "Invalid token or token expired" });
   }
+};
+
+module.exports = {
+  authenticateUser,
 };

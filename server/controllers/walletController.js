@@ -1,9 +1,9 @@
 const userModel = require("../models/userModel");
 
 const MIN_TOPUP = 1;
-const MAX_TOPUP = 100000; 
+const MAX_TOPUP = 100000;
 
-module.exports.getWalletBalance = async (req, res) => {
+const getWalletBalance = async (req, res) => {
   try {
     const { email } = req.params;
     if (!email) return res.status(400).json({ message: "Email is required" });
@@ -18,7 +18,7 @@ module.exports.getWalletBalance = async (req, res) => {
   }
 };
 
-module.exports.topUpWallet = async (req, res) => {
+const topUpWallet = async (req, res) => {
   try {
     const { email, amount } = req.body;
 
@@ -30,22 +30,32 @@ module.exports.topUpWallet = async (req, res) => {
       return res.status(400).json({ message: "Amount must be a valid number" });
     }
     if (parsedAmount <= 0) {
-      return res.status(400).json({ message: "Amount must be greater than zero" });
+      return res
+        .status(400)
+        .json({ message: "Amount must be greater than zero" });
     }
     if (parsedAmount < MIN_TOPUP) {
-      return res.status(400).json({ message: `Minimum top-up amount is ₹${MIN_TOPUP}` });
+      return res
+        .status(400)
+        .json({ message: `Minimum top-up amount is ₹${MIN_TOPUP}` });
     }
     if (parsedAmount > MAX_TOPUP) {
-      return res.status(400).json({ message: `Maximum top-up per transaction is ₹${MAX_TOPUP.toLocaleString("en-IN")}` });
+      return res
+        .status(400)
+        .json({
+          message: `Maximum top-up per transaction is ₹${MAX_TOPUP.toLocaleString("en-IN")}`,
+        });
     }
     if (!Number.isInteger(parsedAmount * 100)) {
-      return res.status(400).json({ message: "Amount can have at most 2 decimal places" });
+      return res
+        .status(400)
+        .json({ message: "Amount can have at most 2 decimal places" });
     }
 
     const updatedUser = await userModel.findOneAndUpdate(
       { email },
       { $inc: { walletBalance: parsedAmount } },
-      { new: true, select: "walletBalance" }
+      { new: true, select: "walletBalance" },
     );
 
     if (!updatedUser) {
@@ -63,7 +73,7 @@ module.exports.topUpWallet = async (req, res) => {
             createdAt: new Date(),
           },
         },
-      }
+      },
     );
 
     res.status(200).json({
@@ -77,7 +87,7 @@ module.exports.topUpWallet = async (req, res) => {
   }
 };
 
-module.exports.deductWallet = async (req, res) => {
+const deductWallet = async (req, res) => {
   try {
     const { email, amount } = req.body;
 
@@ -91,7 +101,7 @@ module.exports.deductWallet = async (req, res) => {
     const updatedUser = await userModel.findOneAndUpdate(
       { email, walletBalance: { $gte: parsedAmount } },
       { $inc: { walletBalance: -parsedAmount } },
-      { new: true, select: "walletBalance" }
+      { new: true, select: "walletBalance" },
     );
 
     if (!updatedUser) {
@@ -112,4 +122,10 @@ module.exports.deductWallet = async (req, res) => {
     console.error("deductWallet error:", err);
     res.status(500).json({ message: "Failed to deduct wallet balance" });
   }
+};
+
+module.exports = {
+  deductWallet,
+  topUpWallet,
+  getWalletBalance,
 };

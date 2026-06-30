@@ -205,7 +205,7 @@ async function fetchMandiPriceForCrop(cropName) {
   return { pricePerKg, source: "baseline", estimated: true };
 }
 
-exports.productProfitComparison = async (req, res) => {
+const productProfitComparison = async (req, res) => {
   try {
     const { email } = req.query;
     if (!email) return res.status(400).json({ message: "email is required" });
@@ -319,7 +319,7 @@ exports.productProfitComparison = async (req, res) => {
   }
 };
 
-exports.fetchAndStoreMandi = async (req, res) => {
+const fetchAndStoreMandi = async (req, res) => {
   try {
     const commodity = req.query.commodity || "Tomato";
     const limit = parseInt(req.query.limit) || 100;
@@ -411,7 +411,7 @@ exports.fetchAndStoreMandi = async (req, res) => {
   }
 };
 
-exports.getMandiPrices = async (req, res) => {
+const getMandiPrices = async (req, res) => {
   try {
     const { commodity, state, limit = 50 } = req.query;
     const filter = {};
@@ -434,7 +434,7 @@ exports.getMandiPrices = async (req, res) => {
   }
 };
 
-exports.predictPrice = async (req, res) => {
+const predictPrice = async (req, res) => {
   try {
     const { crop, date } = req.body;
     if (!crop) return res.status(400).json({ message: "crop is required" });
@@ -545,7 +545,7 @@ exports.predictPrice = async (req, res) => {
   }
 };
 
-exports.profitComparison = async (req, res) => {
+const profitComparison = async (req, res) => {
   try {
     const { crop, date, quantity_kg } = req.body;
     if (!crop) return res.status(400).json({ message: "crop is required" });
@@ -646,7 +646,7 @@ exports.profitComparison = async (req, res) => {
   }
 };
 
-exports.refreshAll = async (req, res) => {
+const refreshAll = async (req, res) => {
   try {
     res.json({
       message:
@@ -657,3 +657,12 @@ exports.refreshAll = async (req, res) => {
     console.error("[MandiRouter] refresh-all error:", err.message);
   }
 };
+
+module.exports = {
+  refreshAll,
+  profitComparison,
+  predictPrice,
+  getMandiPrices,
+  fetchAndStoreMandi,
+  productProfitComparison
+}

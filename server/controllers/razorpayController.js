@@ -7,7 +7,7 @@ const {
   sendOrderNotificationToFarmer,
 } = require("../utils/sendEmail");
 
-module.exports.createOrder = async (req, res) => {
+const createOrder = async (req, res) => {
   const { amount } = req.body;
   try {
     const options = {
@@ -23,7 +23,7 @@ module.exports.createOrder = async (req, res) => {
   }
 };
 
-module.exports.verifyPayment = async (req, res) => {
+const verifyPayment = async (req, res) => {
   const {
     razorpay_order_id,
     razorpay_payment_id,
@@ -175,3 +175,8 @@ module.exports.verifyPayment = async (req, res) => {
       });
   }
 };
+
+module.exports = {
+  verifyPayment,
+  createOrder,
+}

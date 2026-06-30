@@ -6,25 +6,22 @@ const app = express();
 
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const DB = require("./config/mongooseConnection");
+const DB = require("./config/dbConnection");
 const authRouter = require("./routes/authRouter");
 const storeRouter = require("./routes/storeRouter");
-const order = require("./routes/orderRoutes");
-const productRouter = require("./routes/postProductRoute");
-const razorPayRouter = require("./routes/razorPayRoute");
+const order = require("./routes/orderRouter");
+const productRouter = require("./routes/productRouter");
+const razorPayRouter = require("./routes/razorPayRouter");
 const mandiRouter    = require("./routes/mandiRouter");
 const walletRouter   = require("./routes/walletRouter");
 const adminRouter    = require("./routes/adminRouter");
 const { startMandiScheduler } = require("./utils/mandiScheduler");
 const translateRouter         = require("./routes/translateRouter");
+const allowedOrigins = require("./config/allowedOrigins");
 
 const PORT = process.env.PORT || 3000;
 const corsOptions = {
-  origin: [
-    "http://localhost:5173",
-    "https://khetbazaar.netlify.app",
-    "https://khetbizarre.netlify.app",
-  ],
+  origin: allowedOrigins,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
