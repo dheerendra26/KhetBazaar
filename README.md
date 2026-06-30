@@ -77,7 +77,7 @@
 
 ## 🖥️ Live Demo
 
-👉 **[Explore](https://farmersconnnect.netlify.app/)**
+👉 **[Explore](https://khetbizarre.netlify.app/)**
 
 ---
 
