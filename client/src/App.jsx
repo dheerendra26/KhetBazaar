@@ -25,6 +25,7 @@ import Upload from "./pages/Upload";
 import UserProfile from "./pages/userProfile.jsx";
 import Weather from "./pages/Weather.jsx";
 import MandiInsights from "./pages/MandiInsights.jsx";
+import NotFound from "./pages/NotFound";
 
 import { warmUpBackend } from "./utils/coldStarts.js";
 
@@ -121,6 +122,10 @@ const router = createBrowserRouter([
             <MandiInsights />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: "*",
+        element: <NotFound />,
       },
     ],
   },
