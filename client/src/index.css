@@ -21,3 +21,28 @@ a.active {
 * {
   font-family: "SUSE", sans-serif;
 }
+
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.cta-animated {
+  background-size: 200% 200%;
+  animation: gradientFlow 8s ease infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-animated {
+    animation: none;
+  }
+}
