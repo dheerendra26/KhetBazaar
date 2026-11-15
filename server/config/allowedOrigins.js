@@ -1,6 +1,3 @@
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://khetbizarre.netlify.app",
-];
+const allowedOrigins = [process.env.FRONTEND_URL];
 
 module.exports = allowedOrigins;

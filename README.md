@@ -6,7 +6,6 @@
 
 ![Hero Page](./website-demo/Hero-Page.png)
 
----
 
 ## 🚀 Features
 
@@ -21,7 +20,6 @@
 - Backend API built with **Node.js** and **Express.js**
 - Data storage with **MongoDB**
 
----
 
 ## 🛠️ Tech Stack
 
@@ -35,7 +33,6 @@
 - **Frontend**: Vite / Netlify / Render
 - **Backend**: Render
 
----
 
 ## 📍 How It Works
 
@@ -50,7 +47,6 @@
 - 👤 Manage **profile details**
 - 📝 Upload products for sale (farmers/sellers only)
 
----
 
 ### 🛠️ Admin / Seller Capabilities
 
@@ -60,7 +56,6 @@
 - ✏️ Edit or update existing product details
 - ❌ Delete product listings
 
----
 
 ## 🔁 Shopping Flow
 
@@ -73,13 +68,6 @@
 7. **Order is confirmed** → user receives confirmation
 8. **Sellers can manage their product listings**
 
----
-
-## 🖥️ Live Demo
-
-👉 **[Explore](https://khetbizarre.netlify.app/)**
-
----
 
 ## 🏪 Mandi Insights Module (New)
 
@@ -141,3 +129,11 @@ GOV_API_KEY=YOUR_GOV_API_Key
 ```
 
 **4. Visit `/mandi-insights` in the React app**
+
+## 👨‍💻 Author
+
+**Capstone-Crew**
+
+## 📄 License
+
+This project is created for learning and portfolio purposes.
